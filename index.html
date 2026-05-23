@@ -143,7 +143,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
 <body>
 
 <header>
-  <h1>📦 単価チェッカー</h1>
+  <h1>📦 お買い物比較チェック</h1>
   <span class="ver">v3.0</span>
   <span class="sync-status" id="syncStatus">GAS未設定</span>
 </header>
@@ -169,10 +169,12 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
       <div class="disc-lbl">割引・値引き（任意）</div>
       <div class="form-row">
         <div class="fg"><label>割引率 (%)</label>
-          <input type="number" id="discountPct" placeholder="例: 30" min="0" max="100" oninput="calcBoth()"></div>
+          <input type="number" id="discountPct" placeholder="例: 30" min="0" max="100"
+          oninput="calcBoth()" onchange="calcBoth()" ></div>
         <div class="or-sep">または</div>
         <div class="fg"><label>割引後の値段 (円)</label>
-          <input type="number" id="discountPrice" placeholder="例: 350" oninput="calcBoth()"></div>
+          <input type="number" id="discountPrice" placeholder="例: 350"
+            oninput="calcBoth()" onchange="calcBoth()" ></div>
       </div>
     </div>
     <div class="btn-row">
@@ -254,7 +256,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
         グループキーワード
         <span style="font-weight:normal;color:var(--sub)">（共有したいメンバー全員で同じキーワードを設定）</span>
       </label>
-      <input type="text" id="gasGroupKey" placeholder="例: ○○家族　例: hikakudeotokune"
+      <input type="text" id="gasGroupKey" placeholder="例: ○○家族専用　例: hikakudeotokune"
         style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:9px 8px;font-size:1rem;font-family:inherit;background:var(--bg);">
     </div>
     <div style="font-size:.7rem;color:var(--sub);background:var(--surface2);border-radius:6px;padding:8px 10px;margin-bottom:10px">
@@ -325,7 +327,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   <div class="modal">
     <h3>⭐ お気に入り登録</h3>
     <div class="fg"><label>名前</label>
-      <input type="text" id="favName" placeholder="例: 離乳食パウチ"></div>
+      <input type="text" id="favName" placeholder="例: いつものアタック"></div>
     <div class="btn-row">
       <button class="btn btn-gold" onclick="saveFav()">登録する</button>
       <button class="btn btn-secondary" onclick="closeModal('favSaveModal')">キャンセル</button>
@@ -381,7 +383,7 @@ const DEFAULT_CATS = [
   {id:'tp',      name:'トイレットペーパー',icon:'🧻', type:'tp',      unit:'per1m'   },
   {id:'tissue',  name:'ティッシュ',        icon:'🤧', type:'tissue',  unit:'per100p' },
   {id:'ktpaper', name:'キッチンペーパー',  icon:'🍳', type:'ktpaper', unit:'per1cut' },
-  {id:'wrap',    name:'ラップ',            icon:'🍱', type:'wrap',    unit:'per1m'   },
+  {id:'wrap',    name:'ラップ',            icon:'🫙', type:'wrap',    unit:'per1m'   },
   {id:'liquid',  name:'洗剤・シャンプー',  icon:'🧴', type:'liquid',  unit:'per100ml'},
   {id:'drink',   name:'飲料・調味料',      icon:'🍶', type:'liquid',  unit:'per100ml'},
 ];
@@ -609,9 +611,33 @@ function selectCategory(id) {
 }
 
 // 全カテゴリ共通の「個数」欄
+// oninput: キーボード入力時、onchange: ▲▼ボタンや選択変更時に対応
 function qtyField() {
   return `<div class="fg n"><label>個数</label>
-    <input type="number" id="f_qty" placeholder="1" value="1" min="1" oninput="calcBoth()"></div>`;
+    <input type="number" id="f_qty" placeholder="1" value="1" min="1"></div>`;
+}
+
+// フォーム内の全inputにイベントを登録する
+// （iOSのスピナー操作でoninputが発火しない問題への対策）
+function bindFormEvents() {
+  const formBody = document.getElementById('formBody');
+  if (!formBody) return;
+  formBody.querySelectorAll('input, select').forEach(el => {
+    // 既存のリスナーを避けるためcloneで付け替え
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+    clone.addEventListener('input',  () => calcBoth());
+    clone.addEventListener('change', () => calcBoth());
+  });
+  // 割引欄も同様に登録
+  ['discountPct','discountPrice'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+    clone.addEventListener('input',  () => calcBoth());
+    clone.addEventListener('change', () => calcBoth());
+  });
 }
 
 function renderForm(cat) {
@@ -619,36 +645,36 @@ function renderForm(cat) {
   if (cat.type==='meat') {
     b.innerHTML = `
       <div class="form-row">
-        <div class="fg w"><label>グラム数 (g)</label>
-          <input type="number" id="f_gram" placeholder="例: 256" oninput="calcBoth()"></div>
+        <div class="fg w"><label>グラム数 (g / 1個)</label>
+          <input type="number" id="f_gram" placeholder="例: 256"></div>
         ${qtyField()}
-        <div class="fg w"><label>値段 (円)</label>
-          <input type="number" id="f_price" placeholder="例: 538" oninput="calcBoth()"></div>
+        <div class="fg w"><label>合計値段 (円)</label>
+          <input type="number" id="f_price" placeholder="例: 538"></div>
       </div>
-      <div class="hint">※ 個数: 2パックまとめ買いなど合計値段を入力する場合</div>`;
+      <div class="hint">※ 値段欄はまとめ買いの総額を入力。例: 256g×2パック→個数2、値段は2パック分の合計</div>`;
 
   } else if (cat.type==='tp') {
     b.innerHTML = `
       <div class="form-row">
-        <div class="fg"><label>ロール数</label>
-          <input type="number" id="f_rolls" placeholder="例: 12" oninput="calcBoth()"></div>
+        <div class="fg"><label>ロール数 (1個)</label>
+          <input type="number" id="f_rolls" placeholder="例: 12"></div>
         <div class="fg"><label>1ロール (m)</label>
-          <input type="number" id="f_rollLen" placeholder="例: 25" oninput="calcBoth()"></div>
+          <input type="number" id="f_rollLen" placeholder="例: 25"></div>
         ${qtyField()}
-        <div class="fg"><label>値段 (円)</label>
-          <input type="number" id="f_price" placeholder="例: 398" oninput="calcBoth()"></div>
+        <div class="fg"><label>合計値段 (円)</label>
+          <input type="number" id="f_price" placeholder="例: 398"></div>
       </div>`;
 
   } else if (cat.type==='tissue') {
     b.innerHTML = `
       <div class="form-row">
         <div class="fg"><label>1箱の組数</label>
-          <input type="number" id="f_kumis" placeholder="例: 200" oninput="calcBoth()"></div>
-        <div class="fg"><label>パック数(箱数)</label>
-          <input type="number" id="f_packs" placeholder="例: 5" oninput="calcBoth()"></div>
+          <input type="number" id="f_kumis" placeholder="例: 200"></div>
+        <div class="fg"><label>パック数(箱数 / 1個)</label>
+          <input type="number" id="f_packs" placeholder="例: 5"></div>
         ${qtyField()}
-        <div class="fg"><label>値段 (円)</label>
-          <input type="number" id="f_price" placeholder="例: 398" oninput="calcBoth()"></div>
+        <div class="fg"><label>合計値段 (円)</label>
+          <input type="number" id="f_price" placeholder="例: 398"></div>
       </div>
       <div class="hint">※ 組=2枚重ね。100枚単価で比較します</div>`;
 
@@ -656,36 +682,36 @@ function renderForm(cat) {
     b.innerHTML = `
       <div class="form-row">
         <div class="fg"><label>1ロール カット数</label>
-          <input type="number" id="f_cuts" placeholder="例: 50" oninput="calcBoth()"></div>
-        <div class="fg"><label>ロール数</label>
-          <input type="number" id="f_rolls" placeholder="例: 4" oninput="calcBoth()"></div>
+          <input type="number" id="f_cuts" placeholder="例: 50"></div>
+        <div class="fg"><label>ロール数 (1個)</label>
+          <input type="number" id="f_rolls" placeholder="例: 3"></div>
         ${qtyField()}
-        <div class="fg"><label>値段 (円)</label>
-          <input type="number" id="f_price" placeholder="例: 298" oninput="calcBoth()"></div>
+        <div class="fg"><label>合計値段 (円)</label>
+          <input type="number" id="f_price" placeholder="例: 298"></div>
       </div>`;
 
   } else if (cat.type==='wrap') {
     b.innerHTML = `
       <div class="form-row">
-        <div class="fg w"><label>長さ (m)</label>
-          <input type="number" id="f_length" placeholder="例: 50" oninput="calcBoth()"></div>
+        <div class="fg w"><label>長さ (m / 1個)</label>
+          <input type="number" id="f_length" placeholder="例: 50"></div>
         ${qtyField()}
-        <div class="fg w"><label>値段 (円)</label>
-          <input type="number" id="f_price" placeholder="例: 198" oninput="calcBoth()"></div>
+        <div class="fg w"><label>合計値段 (円)</label>
+          <input type="number" id="f_price" placeholder="例: 198"></div>
       </div>`;
 
   } else if (cat.type==='liquid') {
     b.innerHTML = `
       <div class="form-row">
-        <div class="fg w"><label>容量 (ml)</label>
-          <input type="number" id="f_ml" placeholder="例: 800" oninput="calcBoth()"></div>
+        <div class="fg w"><label>容量 (ml / 1個)</label>
+          <input type="number" id="f_ml" placeholder="例: 800"></div>
         ${qtyField()}
-        <div class="fg w"><label>値段 (円)</label>
-          <input type="number" id="f_price" placeholder="例: 398" oninput="calcBoth()"></div>
+        <div class="fg w"><label>合計値段 (円)</label>
+          <input type="number" id="f_price" placeholder="例: 1100"></div>
       </div>
       <div class="form-row">
         <div class="fg"><label>単価の基準</label>
-          <select id="f_liquid_unit" onchange="calcBoth()">
+          <select id="f_liquid_unit">
             <option value="per100ml">100ml単価</option>
             <option value="per1l">1L単価</option>
             <option value="per1ml">1ml単価</option>
@@ -695,14 +721,16 @@ function renderForm(cat) {
   } else {
     b.innerHTML = `
       <div class="form-row">
-        <div class="fg w"><label>量（${UNIT_LABELS[cat.unit]||'単位'}）</label>
-          <input type="number" id="f_amount" placeholder="例: 5" oninput="calcBoth()"></div>
+        <div class="fg w"><label>量（${UNIT_LABELS[cat.unit]||'単位'} / 1個）</label>
+          <input type="number" id="f_amount" placeholder="例: 5"></div>
         ${qtyField()}
-        <div class="fg w"><label>値段 (円)</label>
-          <input type="number" id="f_price" placeholder="例: 298" oninput="calcBoth()"></div>
+        <div class="fg w"><label>合計値段 (円)</label>
+          <input type="number" id="f_price" placeholder="例: 298"></div>
       </div>
       <div class="hint">単価基準: ${UNIT_LABELS[cat.unit]||cat.unit}</div>`;
   }
+  // フォーム描画後にイベントを登録（iOS Safari対応）
+  setTimeout(bindFormEvents, 0);
 }
 
 // ══════════════════════════════════════════
@@ -731,66 +759,79 @@ function calcOne(catId) {
   let unitPrice, unitLabel, basePrice, label;
 
   if (cat.type==='meat') {
-    const gram=parseFloat(document.getElementById('f_gram')?.value);
+    const gram =parseFloat(document.getElementById('f_gram')?.value);
     const price=parseFloat(document.getElementById('f_price')?.value);
     if (isNaN(gram)||isNaN(price)||gram<=0||price<=0) return null;
-    basePrice=price*qty; const tg=gram*qty;
-    unitPrice=basePrice/tg*100; unitLabel='100g単価';
-    label=`${gram}g × ${qty}個 / ${basePrice}円`;
+    basePrice = price;                      // 値段はそのまま合計値段
+    const totalG = gram * qty;             // 総グラム数
+    unitPrice = price / totalG * 100;
+    unitLabel = '100g単価';
+    label = `${gram}g × ${qty}個 / ${price}円`;
 
   } else if (cat.type==='tp') {
     const rolls=parseFloat(document.getElementById('f_rolls')?.value);
-    const rLen=parseFloat(document.getElementById('f_rollLen')?.value);
+    const rLen =parseFloat(document.getElementById('f_rollLen')?.value);
     const price=parseFloat(document.getElementById('f_price')?.value);
     if (isNaN(rolls)||isNaN(rLen)||isNaN(price)||rolls<=0||rLen<=0||price<=0) return null;
-    basePrice=price*qty; const tm=rolls*rLen*qty;
-    unitPrice=basePrice/tm; unitLabel='1m単価';
-    label=`${rolls}ロール×${rLen}m × ${qty}個 / ${basePrice}円`;
+    basePrice = price;
+    const totalM = rolls * rLen * qty;
+    unitPrice = price / totalM;
+    unitLabel = '1m単価';
+    label = `${rolls}ロール×${rLen}m × ${qty}個 / ${price}円`;
 
   } else if (cat.type==='tissue') {
     const kumis=parseFloat(document.getElementById('f_kumis')?.value);
     const packs=parseFloat(document.getElementById('f_packs')?.value||1);
     const price=parseFloat(document.getElementById('f_price')?.value);
     if (isNaN(kumis)||isNaN(price)||kumis<=0||price<=0) return null;
-    basePrice=price*qty; const ts=kumis*2*packs*qty;
-    unitPrice=basePrice/ts*100; unitLabel='100枚単価';
-    label=`${kumis}組×${packs}パック × ${qty}個（計${ts}枚）/ ${basePrice}円`;
+    basePrice = price;
+    const totalSheets = kumis * 2 * packs * qty;
+    unitPrice = price / totalSheets * 100;
+    unitLabel = '100枚単価';
+    label = `${kumis}組×${packs}パック × ${qty}個（計${totalSheets}枚）/ ${price}円`;
 
   } else if (cat.type==='ktpaper') {
-    const cuts=parseFloat(document.getElementById('f_cuts')?.value);
+    const cuts =parseFloat(document.getElementById('f_cuts')?.value);
     const rolls=parseFloat(document.getElementById('f_rolls')?.value||1);
     const price=parseFloat(document.getElementById('f_price')?.value);
     if (isNaN(cuts)||isNaN(price)||cuts<=0||price<=0) return null;
-    basePrice=price*qty; const tc=cuts*rolls*qty;
-    unitPrice=basePrice/tc; unitLabel='1カット単価';
-    label=`${cuts}カット×${rolls}ロール × ${qty}個（計${tc}カット）/ ${basePrice}円`;
+    basePrice = price;
+    const totalCuts = cuts * rolls * qty;
+    unitPrice = price / totalCuts;
+    unitLabel = '1カット単価';
+    label = `${cuts}カット×${rolls}ロール × ${qty}個（計${totalCuts}カット）/ ${price}円`;
 
   } else if (cat.type==='wrap') {
     const length=parseFloat(document.getElementById('f_length')?.value);
-    const price=parseFloat(document.getElementById('f_price')?.value);
+    const price =parseFloat(document.getElementById('f_price')?.value);
     if (isNaN(length)||isNaN(price)||length<=0||price<=0) return null;
-    basePrice=price*qty; const tm=length*qty;
-    unitPrice=basePrice/tm; unitLabel='1m単価';
-    label=`${length}m × ${qty}個 / ${basePrice}円`;
+    basePrice = price;
+    const totalM = length * qty;
+    unitPrice = price / totalM;
+    unitLabel = '1m単価';
+    label = `${length}m × ${qty}個 / ${price}円`;
 
   } else if (cat.type==='liquid') {
-    const ml=parseFloat(document.getElementById('f_ml')?.value);
+    const ml   =parseFloat(document.getElementById('f_ml')?.value);
     const price=parseFloat(document.getElementById('f_price')?.value);
-    const lu=document.getElementById('f_liquid_unit')?.value||'per100ml';
+    const lu   =document.getElementById('f_liquid_unit')?.value||'per100ml';
     if (isNaN(ml)||isNaN(price)||ml<=0||price<=0) return null;
-    basePrice=price*qty; const tml=ml*qty;
-    if      (lu==='per1l')  { unitPrice=basePrice/tml*1000; unitLabel='1L単価'; }
-    else if (lu==='per1ml') { unitPrice=basePrice/tml;      unitLabel='1ml単価'; }
-    else                    { unitPrice=basePrice/tml*100;  unitLabel='100ml単価'; }
-    label=`${ml}ml × ${qty}個 / ${basePrice}円`;
+    basePrice = price;
+    const totalMl = ml * qty;
+    if      (lu==='per1l')  { unitPrice=price/totalMl*1000; unitLabel='1L単価'; }
+    else if (lu==='per1ml') { unitPrice=price/totalMl;      unitLabel='1ml単価'; }
+    else                    { unitPrice=price/totalMl*100;  unitLabel='100ml単価'; }
+    label = `${ml}ml × ${qty}個 / ${price}円`;
 
   } else {
     const amount=parseFloat(document.getElementById('f_amount')?.value);
-    const price=parseFloat(document.getElementById('f_price')?.value);
+    const price =parseFloat(document.getElementById('f_price')?.value);
     if (isNaN(amount)||isNaN(price)||amount<=0||price<=0) return null;
-    basePrice=price*qty; const tot=amount*qty;
-    unitPrice=basePrice/tot; unitLabel=UNIT_LABELS[cat.unit]||'単価';
-    label=`${tot}${cat.unit} / ${basePrice}円`;
+    basePrice = price;
+    const total = amount * qty;
+    unitPrice = price / total;
+    unitLabel = UNIT_LABELS[cat.unit]||'単価';
+    label = `${total}${cat.unit} / ${price}円`;
   }
 
   const discountedPrice = getDiscount(basePrice);
