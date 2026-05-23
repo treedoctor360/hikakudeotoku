@@ -254,7 +254,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
         グループキーワード
         <span style="font-weight:normal;color:var(--sub)">（共有したいメンバー全員で同じキーワードを設定）</span>
       </label>
-      <input type="text" id="gasGroupKey" placeholder="例: dootoku　例: Tomodachi1"
+      <input type="text" id="gasGroupKey" placeholder="例: ○○家族　例: hikakudeotokune"
         style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:9px 8px;font-size:1rem;font-family:inherit;background:var(--bg);">
     </div>
     <div style="font-size:.7rem;color:var(--sub);background:var(--surface2);border-radius:6px;padding:8px 10px;margin-bottom:10px">
@@ -274,7 +274,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     <p style="font-size:.72rem;color:var(--sub);margin-bottom:8px">追加すると自動でスプレッドシートにも保存。「☁️ 取得」でパートナーの店舗を取り込めます</p>
     <div id="storeList"></div>
     <div class="form-row" style="margin-top:8px">
-      <div class="fg"><input type="text" id="newStoreName" placeholder="例: イオン伊丹店" style="font-size:.9rem"></div>
+      <div class="fg"><input type="text" id="newStoreName" placeholder="例: 平和堂" style="font-size:.9rem"></div>
       <button class="btn btn-secondary btn-sm" onclick="addStore()">追加</button>
     </div>
   </div>
@@ -308,7 +308,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
         <option value="">-- 選択 --</option>
       </select></div>
     <div class="fg"><label>店舗名（直接入力 / 選択で自動入力）</label>
-      <input type="text" id="saveStoreName" placeholder="例: イオン伊丹店"></div>
+      <input type="text" id="saveStoreName" placeholder="例: フレンドマート"></div>
     <div class="fg"><label>日付</label>
       <input type="date" id="saveDate"></div>
     <div class="fg"><label>メモ（任意）</label>
@@ -325,7 +325,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   <div class="modal">
     <h3>⭐ お気に入り登録</h3>
     <div class="fg"><label>名前</label>
-      <input type="text" id="favName" placeholder="例: いつものアタック"></div>
+      <input type="text" id="favName" placeholder="例: 離乳食パウチ"></div>
     <div class="btn-row">
       <button class="btn btn-gold" onclick="saveFav()">登録する</button>
       <button class="btn btn-secondary" onclick="closeModal('favSaveModal')">キャンセル</button>
@@ -381,7 +381,7 @@ const DEFAULT_CATS = [
   {id:'tp',      name:'トイレットペーパー',icon:'🧻', type:'tp',      unit:'per1m'   },
   {id:'tissue',  name:'ティッシュ',        icon:'🤧', type:'tissue',  unit:'per100p' },
   {id:'ktpaper', name:'キッチンペーパー',  icon:'🍳', type:'ktpaper', unit:'per1cut' },
-  {id:'wrap',    name:'ラップ',            icon:'🫙', type:'wrap',    unit:'per1m'   },
+  {id:'wrap',    name:'ラップ',            icon:'🍱', type:'wrap',    unit:'per1m'   },
   {id:'liquid',  name:'洗剤・シャンプー',  icon:'🧴', type:'liquid',  unit:'per100ml'},
   {id:'drink',   name:'飲料・調味料',      icon:'🍶', type:'liquid',  unit:'per100ml'},
 ];
@@ -401,6 +401,10 @@ window.addEventListener('DOMContentLoaded', () => {
   initDB(() => {
     renderAll();
     updateSyncStatusUI();
+    // GAS設定済みの場合はアプリ起動時に自動取得
+    if (getGasUrl()) {
+      silentSyncFromGAS();
+    }
   });
 });
 
@@ -654,7 +658,7 @@ function renderForm(cat) {
         <div class="fg"><label>1ロール カット数</label>
           <input type="number" id="f_cuts" placeholder="例: 50" oninput="calcBoth()"></div>
         <div class="fg"><label>ロール数</label>
-          <input type="number" id="f_rolls" placeholder="例: 3" oninput="calcBoth()"></div>
+          <input type="number" id="f_rolls" placeholder="例: 4" oninput="calcBoth()"></div>
         ${qtyField()}
         <div class="fg"><label>値段 (円)</label>
           <input type="number" id="f_price" placeholder="例: 298" oninput="calcBoth()"></div>
@@ -1144,6 +1148,67 @@ async function syncToGAS(rec) {
   } catch(e) {
     console.warn('GAS送信エラー:', e);
     alert('GAS送信に失敗しました。\n設定タブで接続テストをお試しください。\n詳細: '+e.message);
+  }
+}
+
+// 起動時のサイレント自動取得（アラートなし・エラーも静かに処理）
+async function silentSyncFromGAS() {
+  const url = getGasUrl(); if (!url) return;
+  const key = getGroupKey();
+  const keyParam = key ? `&key=${encodeURIComponent(key)}` : '';
+  try {
+    document.getElementById('syncStatus').textContent = '同期中...';
+    const [histRes, storeRes] = await Promise.all([
+      fetch(`${url}?action=getAll${keyParam}`),
+      fetch(`${url}?action=getStores${keyParam}`),
+    ]);
+    const histJson  = await histRes.json();
+    const storeJson = await storeRes.json();
+
+    // 履歴をマージ
+    let added = 0;
+    if (histJson.records) {
+      for (const rec of histJson.records) {
+        const exists = await new Promise(r => {
+          const tx  = db.transaction('history', 'readonly');
+          const idx = tx.objectStore('history').index('gasId');
+          const req = idx.getKey(rec.gasId);
+          req.onsuccess = () => r(req.result != null);
+        });
+        if (!exists) {
+          const tx = db.transaction('history', 'readwrite');
+          tx.objectStore('history').add(rec);
+          added++;
+        }
+      }
+    }
+
+    // 店舗をマージ
+    if (storeJson.stores && Array.isArray(storeJson.stores)) {
+      let storeAdded = 0;
+      storeJson.stores.forEach(name => {
+        if (name && !stores.includes(name)) { stores.push(name); storeAdded++; }
+      });
+      if (storeAdded > 0) {
+        saveStores(); renderStoreList(); updateSaveStoreSelect(); updateHistFilters();
+      }
+    }
+
+    // ステータス表示を更新
+    const key2 = getGroupKey();
+    const label = key2 ? `GAS設定済 [${key2}]` : 'GAS設定済';
+    document.getElementById('syncStatus').textContent = added > 0 ? `☁️ ${added}件追加` : label;
+    document.getElementById('syncStatus').className = 'sync-status ok';
+    if (added > 0) {
+      renderHistory();
+      // 2秒後にステータスを通常表示に戻す
+      setTimeout(updateSyncStatusUI, 2000);
+    }
+  } catch (e) {
+    // 起動時エラーはアラートを出さずステータスだけ変える
+    console.warn('[自動取得] エラー:', e);
+    document.getElementById('syncStatus').textContent = '取得エラー';
+    document.getElementById('syncStatus').className = 'sync-status err';
   }
 }
 
