@@ -2,7 +2,7 @@
   "name": "お買い物比較",
   "short_name": "お買い物比較",
   "description": "買い物の単価を素早く計算・比較・保存",
-  "start_url": "./price-checker.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#f5f3ee",
   "theme_color": "#c0392b",
