@@ -1,119 +1,75 @@
-// ============================================================
-// お買い物比較アプリ - Service Worker v3.0
-// ============================================================
-const CACHE_NAME = 'お買い物比較アプリ';
-const TILE_CACHE = 'お買い物比較アプリv3.0';
+// ══════════════════════════════════════════
+// お買い物比較 - Service Worker
+// オフライン対応・キャッシュ管理
+// ══════════════════════════════════════════
 
-const APP_SHELL = [
-  './',
-  './index.html',
+const CACHE_NAME = 'okaimono-hikaku-v3';
+
+// キャッシュするファイル一覧
+const CACHE_FILES = [
+  './price-checker.html',
   './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
 ];
 
-const CDN_ASSETS = [
-  'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap',
-];
-
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(async cache => {
-      for (const url of APP_SHELL) {
-        try { await cache.add(url); } catch(e) { console.warn('[SW] App shell miss:', url); }
-      }
-      for (const url of CDN_ASSETS) {
-        try {
-          const res = await fetch(url, { mode: 'cors' });
-          if (res.ok) await cache.put(url, res);
-        } catch(e) { console.warn('[SW] CDN miss:', url); }
-      }
-    }).then(() => self.skipWaiting())
+// ── インストール時：キャッシュに保存 ──
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('[SW] キャッシュ作成:', CACHE_NAME);
+      return cache.addAll(CACHE_FILES);
+    })
   );
+  // 即座に有効化（古いSWを待たずに起動）
+  self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(
+// ── アクティベート時：古いキャッシュを削除 ──
+self.addEventListener('activate', e => {
+  e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(k => k !== CACHE_NAME && k !== TILE_CACHE)
-          .map(k => caches.delete(k))
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => {
+            console.log('[SW] 古いキャッシュ削除:', key);
+            return caches.delete(key);
+          })
       )
-    ).then(() => self.clients.claim())
+    )
+  );
+  // 全クライアントを即座に制御下に置く
+  self.clients.claim();
+});
+
+// ── フェッチ時：キャッシュ優先 → ネットワーク ──
+// GASへのリクエスト（script.google.com）はキャッシュしない
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+
+  // GAS・外部APIへのリクエストはそのままネットワークへ
+  if (url.hostname.includes('google.com') ||
+      url.hostname.includes('googleapis.com') ||
+      url.hostname.includes('fonts.g')) {
+    return;
+  }
+
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) {
+        // キャッシュがあれば返す（オフラインでも動作）
+        return cached;
+      }
+      // キャッシュになければネットワークから取得してキャッシュに追加
+      return fetch(e.request).then(response => {
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+        const toCache = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, toCache));
+        return response;
+      });
+    })
   );
 });
-
-self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-  if (url.hostname.includes('tile.openstreetmap.org')) {
-    event.respondWith(tileStrategy(event.request));
-    return;
-  }
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    event.respondWith(cacheFirst(event.request, CACHE_NAME));
-    return;
-  }
-  const isCDN = CDN_ASSETS.some(a => event.request.url.startsWith(a.split('?')[0]));
-  if (isCDN) {
-    event.respondWith(cacheFirst(event.request, CACHE_NAME));
-    return;
-  }
-  if (url.origin === self.location.origin) {
-    event.respondWith(networkFirst(event.request));
-    return;
-  }
-});
-
-async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-  if (cached) return cached;
-  try {
-    const res = await fetch(request);
-    if (res.ok) cache.put(request, res.clone());
-    return res;
-  } catch(e) {
-    return new Response('Offline', { status: 503 });
-  }
-}
-
-async function networkFirst(request) {
-  const cache = await caches.open(CACHE_NAME);
-  try {
-    const res = await fetch(request);
-    if (res.ok) cache.put(request, res.clone());
-    return res;
-  } catch(e) {
-    const cached = await cache.match(request);
-    return cached || new Response('Offline', { status: 503 });
-  }
-}
-
-async function tileStrategy(request) {
-  const cache = await caches.open(TILE_CACHE);
-  const cached = await cache.match(request);
-  if (cached) return cached;
-  try {
-    const res = await fetch(request);
-    if (res.ok) {
-      cache.put(request, res.clone());
-      trimTileCache(cache, 500);
-    }
-    return res;
-  } catch(e) {
-    return new Response(
-      atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='),
-      { headers: { 'Content-Type': 'image/png' } }
-    );
-  }
-}
-
-async function trimTileCache(cache, maxEntries) {
-  const keys = await cache.keys();
-  if (keys.length > maxEntries) {
-    const toDelete = keys.slice(0, keys.length - maxEntries);
-    for (const key of toDelete) await cache.delete(key);
-  }
-}
