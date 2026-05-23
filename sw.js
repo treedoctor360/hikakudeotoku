@@ -3,11 +3,12 @@
 // オフライン対応・キャッシュ管理
 // ══════════════════════════════════════════
 
-const CACHE_NAME = 'okaimono-hikaku-v3';
+const CACHE_NAME = 'okaimono-hikaku-v3-1';
 
 // キャッシュするファイル一覧
 const CACHE_FILES = [
-  './price-checker.html',
+  './',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
