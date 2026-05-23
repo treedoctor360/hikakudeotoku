@@ -1206,10 +1206,12 @@ async function silentSyncFromGAS() {
     const histJson  = await histRes.json();
     const storeJson = await storeRes.json();
 
-    // 履歴をマージ
+    // 履歴をマージ（deleted=trueはスキップ）
     let added = 0;
     if (histJson.records) {
       for (const rec of histJson.records) {
+        // スプレッドシート側でdeleted=trueの行は取り込まない
+        if (rec.deleted === true || rec.deleted === 'true' || rec.deleted === 'TRUE') continue;
         const exists = await new Promise(r => {
           const tx  = db.transaction('history', 'readonly');
           const idx = tx.objectStore('history').index('gasId');
@@ -1268,10 +1270,12 @@ async function syncFromGAS() {
     const histJson  = await histRes.json();
     const storeJson = await storeRes.json();
 
-    // 履歴をマージ
+    // 履歴をマージ（deleted=trueはスキップ）
     let added=0;
     if(histJson.records) {
       for(const rec of histJson.records) {
+        // スプレッドシート側でdeleted=trueの行は取り込まない
+        if (rec.deleted === true || rec.deleted === 'true' || rec.deleted === 'TRUE') continue;
         const exists=await new Promise(r=>{
           const tx=db.transaction('history','readonly');
           const idx=tx.objectStore('history').index('gasId');
