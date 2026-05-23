@@ -1043,10 +1043,34 @@ function histToAB(id) {
 }
 
 function deleteHistory(id) {
-  if(!confirm('削除しますか？')) return;
-  const tx=db.transaction('history','readwrite');
-  tx.objectStore('history').delete(id);
-  tx.oncomplete=()=>renderHistory();
+  if(!confirm('削除しますか？\nGASと同期済みの場合、スプレッドシートからも削除されます')) return;
+  // IndexedDBから該当レコードを取得してgasIdを確認
+  const tx0 = db.transaction('history','readonly');
+  const req0 = tx0.objectStore('history').get(id);
+  req0.onsuccess = () => {
+    const rec = req0.result;
+    // ローカルDBから削除
+    const tx = db.transaction('history','readwrite');
+    tx.objectStore('history').delete(id);
+    tx.oncomplete = () => {
+      renderHistory();
+      // GAS同期済みの場合（gasIdがある）は論理削除リクエストを送る
+      if (rec && rec.gasId) {
+        softDeleteOnGAS(rec.gasId);
+      }
+    };
+  };
+}
+
+// GASに論理削除リクエストを送る
+async function softDeleteOnGAS(gasId) {
+  const url = getGasUrl(); if (!url) return;
+  const key = getGroupKey();
+  try {
+    const res  = await fetch(`${url}?action=deleteRecord&gasId=${encodeURIComponent(gasId)}&key=${encodeURIComponent(key)}`);
+    const json = await res.json();
+    if (!json.success) console.warn('GAS論理削除失敗:', json);
+  } catch(e) { console.warn('GAS論理削除エラー:', e); }
 }
 
 // ══════════════════════════════════════════
