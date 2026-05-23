@@ -1270,12 +1270,16 @@ async function syncFromGAS() {
     const histJson  = await histRes.json();
     const storeJson = await storeRes.json();
 
+    // デバッグ：GASから何件返ってきたか確認
+    const totalFromGAS = histJson.records ? histJson.records.length : 0;
+
     // 履歴をマージ（deleted=trueはスキップ）
-    let added=0;
+    let added=0, skippedDeleted=0, skippedExists=0;
     if(histJson.records) {
       for(const rec of histJson.records) {
-        // スプレッドシート側でdeleted=trueの行は取り込まない
-        if (rec.deleted === true || rec.deleted === 'true' || rec.deleted === 'TRUE') continue;
+        if (rec.deleted === true || rec.deleted === 'true' || rec.deleted === 'TRUE') {
+          skippedDeleted++; continue;
+        }
         const exists=await new Promise(r=>{
           const tx=db.transaction('history','readonly');
           const idx=tx.objectStore('history').index('gasId');
@@ -1286,7 +1290,7 @@ async function syncFromGAS() {
           const tx=db.transaction('history','readwrite');
           tx.objectStore('history').add(rec);
           added++;
-        }
+        } else { skippedExists++; }
       }
     }
 
@@ -1304,7 +1308,14 @@ async function syncFromGAS() {
     document.getElementById('syncStatus').textContent='同期OK';
     document.getElementById('syncStatus').className='sync-status ok';
     renderHistory();
-    alert(`☁️ 取得完了\n履歴: ${added}件追加\n店舗: ${storeAdded}件追加`);
+    alert(
+      `☁️ 取得完了\n` +
+      `GASから取得: ${totalFromGAS}件\n` +
+      `　うち新規追加: ${added}件\n` +
+      `　うち削除済みスキップ: ${skippedDeleted}件\n` +
+      `　うち既存スキップ: ${skippedExists}件\n` +
+      `店舗: ${storeAdded}件追加`
+    );
   } catch(e) {
     document.getElementById('syncStatus').textContent='取得エラー';
     document.getElementById('syncStatus').className='sync-status err';
