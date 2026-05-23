@@ -1,0 +1,25 @@
+{
+  "name": "お買い物比較",
+  "short_name": "お買い物比較",
+  "description": "買い物の単価を素早く計算・比較・保存",
+  "start_url": "./price-checker.html",
+  "display": "standalone",
+  "background_color": "#f5f3ee",
+  "theme_color": "#c0392b",
+  "orientation": "portrait",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
