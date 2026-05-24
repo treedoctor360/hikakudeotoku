@@ -1,11 +1,10 @@
 // ══════════════════════════════════════════
 // お買い物比較 - Service Worker
-// オフライン対応・キャッシュ管理
+// ネットワーク優先戦略（常に最新版を取得）
 // ══════════════════════════════════════════
 
-const CACHE_NAME = 'okaimono-hikaku-v3';
+const CACHE_NAME = 'okaimono-hikaku-v4';
 
-// キャッシュするファイル一覧
 const CACHE_FILES = [
   './',
   './index.html',
@@ -19,10 +18,15 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('[SW] キャッシュ作成:', CACHE_NAME);
-      return cache.addAll(CACHE_FILES);
+      // addAllの失敗でSW全体が止まらないよう個別にtry
+      return Promise.allSettled(
+        CACHE_FILES.map(url => cache.add(url).catch(err => {
+          console.warn('[SW] キャッシュ失敗:', url, err);
+        }))
+      );
     })
   );
-  // 即座に有効化（古いSWを待たずに起動）
+  // 即座に有効化
   self.skipWaiting();
 });
 
@@ -40,33 +44,52 @@ self.addEventListener('activate', e => {
       )
     )
   );
-  // 全クライアントを即座に制御下に置く
   self.clients.claim();
 });
 
-// ── フェッチ時：キャッシュ優先 → ネットワーク ──
-// GASへのリクエスト（script.google.com）はキャッシュしない
+// ── フェッチ時：ネットワーク優先 → キャッシュ ──
+// GAS・外部APIはキャッシュしない
+// HTMLファイルは常にネットワークから取得（最新版を確保）
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // GAS・外部APIへのリクエストはそのままネットワークへ
-  if (url.hostname.includes('google.com') ||
-      url.hostname.includes('googleapis.com') ||
-      url.hostname.includes('fonts.g')) {
+  // GAS・Google系・フォントはSWをスルー
+  if (
+    url.hostname.includes('script.google.com') ||
+    url.hostname.includes('googleapis.com') ||
+    url.hostname.includes('fonts.gstatic.com') ||
+    url.hostname.includes('fonts.googleapis.com')
+  ) {
     return;
   }
 
+  // HTMLファイルは必ずネットワーク優先（キャッシュは使わない）
+  // → index.htmlが更新されたら即反映される
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(response => {
+          // 取得成功したらキャッシュも更新しておく
+          if (response && response.status === 200) {
+            const toCache = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(e.request, toCache));
+          }
+          return response;
+        })
+        .catch(() => {
+          // オフライン時のみキャッシュから返す
+          return caches.match(e.request);
+        })
+    );
+    return;
+  }
+
+  // 画像・manifest等はキャッシュ優先（変更が少ないため）
   e.respondWith(
     caches.match(e.request).then(cached => {
-      if (cached) {
-        // キャッシュがあれば返す（オフラインでも動作）
-        return cached;
-      }
-      // キャッシュになければネットワークから取得してキャッシュに追加
+      if (cached) return cached;
       return fetch(e.request).then(response => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
+        if (!response || response.status !== 200) return response;
         const toCache = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(e.request, toCache));
         return response;
