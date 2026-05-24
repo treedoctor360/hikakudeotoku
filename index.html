@@ -212,8 +212,17 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     </div>
   </div>
 
+  <!-- 計算結果カード（フォームと比較リストの間） -->
+  <div id="resultCard" style="display:none">
+    <div class="result-box" id="resultBox"></div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="btn btn-secondary btn-sm" onclick="addToCompare()">🆚 比較リストに追加</button>
+      <button class="btn btn-green btn-sm" onclick="openSaveModal()">💾 履歴に保存</button>
+    </div>
+  </div>
+
   <!-- 比較リスト -->
-  <div id="compareArea" style="display:none;padding-bottom:80px">
+  <div id="compareArea" style="display:none">
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="card-title" style="margin:0">🆚 比較リスト <span class="badge" id="compareBadge">0</span></div>
@@ -316,20 +325,6 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   </div>
 </div>
 
-<!-- ══ 固定結果バー（計算タブ用） ══ -->
-<div class="result-bar" id="resultBar">
-  <div class="result-bar-inner">
-    <div>
-      <div class="result-bar-price" id="barPrice">—<span> 円/単価</span></div>
-      <div class="result-bar-after" id="barAfter"></div>
-      <div class="result-bar-info" id="barInfo"></div>
-    </div>
-    <div class="result-bar-btns">
-      <button class="btn btn-secondary btn-sm" onclick="addToCompare()">🆚</button>
-      <button class="btn btn-green btn-sm" onclick="openSaveModal()">💾 保存</button>
-    </div>
-  </div>
-</div>
 
 <!-- ══ 比較保存モーダル ══ -->
 <div class="modal-overlay" id="saveCmpModal">
@@ -510,12 +505,6 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  const bar = document.getElementById('resultBar');
-  if (name !== 'calc') {
-    bar.classList.remove('show');
-  } else if (currentResult) {
-    bar.classList.add('show');
-  }
   if (name==='history') renderHistory();
   if (name==='fav')     renderFavList();
   if (name==='compare') renderSavedCmpList();
@@ -657,7 +646,7 @@ function selectCategory(id) {
   document.getElementById('formTitle').textContent = cat.name+' の単価計算';
   document.getElementById('formCard').style.display = 'block';
   currentResult = null;
-  document.getElementById('resultBar').classList.remove('show');
+  document.getElementById('resultCard').style.display = 'none';
   renderForm(cat);
   clearDiscount();
 }
@@ -759,7 +748,7 @@ function renderForm(cat) {
           <input type="number" id="f_ml" placeholder="例: 800"></div>
         ${qtyField()}
         <div class="fg w"><label>合計値段 (円)</label>
-          <input type="number" id="f_price" placeholder="例: 1200"></div>
+          <input type="number" id="f_price" placeholder="例: 1100"></div>
       </div>
       <div class="form-row">
         <div class="fg"><label>単価の基準</label>
@@ -899,22 +888,22 @@ function calcBoth() {
   const r = calcOne(selectedCatId);
   currentResult = r;
 
-  const bar = document.getElementById('resultBar');
-  if (!r) {
-    bar.classList.remove('show');
-    return;
-  }
+  const card = document.getElementById('resultCard');
+  if (!r) { card.style.display = 'none'; return; }
 
   const dp = r.unitAfter ?? r.unitPrice;
 
-  // 固定バーを更新・表示
-  document.getElementById('barPrice').innerHTML =
-    `${fmt(r.unitPrice)}<span> 円/${r.unitLabel}</span>`;
-  document.getElementById('barAfter').textContent =
-    r.unitAfter!==null ? `割引後 → ${fmt(r.unitAfter)}円/${r.unitLabel}` : '';
-  document.getElementById('barInfo').textContent =
-    `${r.cat.icon} ${r.cat.name} — ${r.label}`;
-  bar.classList.add('show');
+  // 結果をresultBoxに描画
+  let html = `
+    <div style="font-size:.7rem;opacity:.55;margin-bottom:4px">${r.cat.icon} ${r.cat.name} — ${r.label}</div>
+    <div class="r-main">${fmt(r.unitPrice)}<span>円 / ${r.unitLabel}</span></div>`;
+  if (r.unitAfter !== null) {
+    html += `
+      <div class="r-sub">割引後: ${fmt(r.discountedPrice)}円</div>
+      <div class="r-after">→ ${fmt(r.unitAfter)}円 / ${r.unitLabel}</div>`;
+  }
+  document.getElementById('resultBox').innerHTML = html;
+  card.style.display = 'block';
 }
 
 // ══════════════════════════════════════════
@@ -1127,7 +1116,7 @@ function clearForm() {
   const cat=getAllCats().find(c=>c.id===selectedCatId);
   if(cat) renderForm(cat);
   clearDiscount();
-  document.getElementById('resultBar').classList.remove('show');
+  document.getElementById('resultCard').style.display = 'none';
   currentResult = null;
 }
 
