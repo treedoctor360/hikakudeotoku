@@ -3,7 +3,7 @@
 // オフライン対応・キャッシュ管理
 // ══════════════════════════════════════════
 
-const CACHE_NAME = 'okaimono-hikaku-v3-1';
+const CACHE_NAME = 'okaimono-hikaku-v3';
 
 // キャッシュするファイル一覧
 const CACHE_FILES = [
