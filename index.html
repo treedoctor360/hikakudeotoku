@@ -131,7 +131,20 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
 .empty-msg{text-align:center;color:var(--sub);padding:28px 0;font-size:.85rem;line-height:1.8;}
 .badge{font-size:.68rem;background:var(--accent2);color:#fff;padding:1px 5px;border-radius:4px;vertical-align:middle;margin-left:4px;}
 
-/* 比較リスト */
+/* 固定結果バー */
+.result-bar{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:var(--text);color:#fff;
+  padding:10px 16px;
+  box-shadow:0 -4px 16px rgba(0,0,0,.25);
+}
+.result-bar.show{display:block;}
+.result-bar-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px;}
+.result-bar-price{font-family:'Oswald',sans-serif;font-size:1.6rem;color:var(--gold);line-height:1;white-space:nowrap;}
+.result-bar-price span{font-size:.8rem;color:rgba(255,255,255,.6);}
+.result-bar-after{font-size:.75rem;color:rgba(255,255,255,.6);margin-top:2px;}
+.result-bar-info{flex:1;font-size:.68rem;opacity:.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.result-bar-btns{display:flex;gap:6px;flex-shrink:0;}
 .cmp-item{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface);margin-bottom:8px;display:flex;align-items:center;gap:8px;position:relative;transition:border-color .15s;}
 .cmp-item.cheapest{border-color:var(--accent);background:#fdf1f0;}
 .cmp-item.cheapest::before{content:'最安';position:absolute;top:-1px;right:8px;background:var(--accent);color:#fff;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:0 0 4px 4px;}
@@ -166,12 +179,13 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
 <div class="tabs">
   <div class="tab active" onclick="switchTab('calc')">計算</div>
   <div class="tab" onclick="switchTab('history')">履歴</div>
+  <div class="tab" onclick="switchTab('compare')">比較 <span class="badge" id="cmpSavedBadge" style="display:none"></span></div>
   <div class="tab" onclick="switchTab('fav')">お気に入り</div>
   <div class="tab" onclick="switchTab('settings')">設定</div>
 </div>
 
 <!-- ══ 計算タブ ══ -->
-<div id="tab-calc" class="page active">
+<div id="tab-calc" class="page active" style="padding-bottom:80px">
   <div class="card">
     <div class="card-title">カテゴリ</div>
     <div class="cat-grid" id="catGrid"></div>
@@ -198,23 +212,15 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     </div>
   </div>
 
-  <div id="resultArea" style="display:none">
-    <div class="result-box" id="resultBox"></div>
-    <div class="card">
-      <div class="card-title">この結果を...</div>
-      <div class="btn-row">
-        <button class="btn btn-secondary btn-sm" onclick="addToCompare()">🆚 比較リストに追加</button>
-        <button class="btn btn-green btn-sm" onclick="openSaveModal()">💾 履歴に保存</button>
-      </div>
-    </div>
-  </div>
-
   <!-- 比較リスト -->
-  <div id="compareArea" style="display:none">
+  <div id="compareArea" style="display:none;padding-bottom:80px">
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="card-title" style="margin:0">🆚 比較リスト <span class="badge" id="compareBadge">0</span></div>
-        <button class="btn btn-secondary btn-sm" onclick="clearCompare()">全クリア</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-green btn-sm" onclick="openSaveCmpModal()">💾 保存</button>
+          <button class="btn btn-secondary btn-sm" onclick="clearCompare()">全クリア</button>
+        </div>
       </div>
       <div id="compareList"></div>
       <div id="compareVerdict" style="text-align:center;font-size:.82rem;padding:6px 0"></div>
@@ -233,6 +239,14 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     <button class="btn btn-blue btn-sm" onclick="syncFromGAS()" title="スプレッドシートから取得">☁️ 取得</button>
   </div>
   <div id="histList"></div>
+</div>
+
+<!-- ══ 比較保存タブ ══ -->
+<div id="tab-compare" class="page">
+  <div class="card">
+    <div class="card-title">💾 保存した比較</div>
+    <div id="savedCmpList"><div class="empty-msg">比較リストの「💾 保存」で<br>保存した比較がここに表示されます</div></div>
+  </div>
 </div>
 
 <!-- ══ お気に入りタブ ══ -->
@@ -299,6 +313,34 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
       <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importFile').click()">📥 インポート</button>
     </div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</div>
+
+<!-- ══ 固定結果バー（計算タブ用） ══ -->
+<div class="result-bar" id="resultBar">
+  <div class="result-bar-inner">
+    <div>
+      <div class="result-bar-price" id="barPrice">—<span> 円/単価</span></div>
+      <div class="result-bar-after" id="barAfter"></div>
+      <div class="result-bar-info" id="barInfo"></div>
+    </div>
+    <div class="result-bar-btns">
+      <button class="btn btn-secondary btn-sm" onclick="addToCompare()">🆚</button>
+      <button class="btn btn-green btn-sm" onclick="openSaveModal()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 比較保存モーダル ══ -->
+<div class="modal-overlay" id="saveCmpModal">
+  <div class="modal">
+    <h3>💾 比較を保存</h3>
+    <div class="fg"><label>タイトル（例: 洗剤比較 2026-05）</label>
+      <input type="text" id="saveCmpTitle" placeholder="例: 洗剤比較"></div>
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="saveCompare()">保存する</button>
+      <button class="btn btn-secondary" onclick="closeModal('saveCmpModal')">キャンセル</button>
+    </div>
   </div>
 </div>
 
@@ -369,7 +411,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
 // ══════════════════════════════════════════
 const APP_VER = 'v3.0';
 const DB_NAME = 'PriceCheckerDB';
-const DB_VER  = 2;  // v2.2: gasIdインデックスを追加
+const DB_VER  = 3;  // v3.x: compareSavedストアを追加
 
 let db             = null;
 let selectedCatId  = null;
@@ -429,30 +471,31 @@ function renderAll() {
   renderFavList(); renderStoreList();
   renderHistory(); updateHistFilters();
   updateSaveStoreSelect();
+  updateCmpSavedBadge();
 }
 
 function initDB(cb) {
   const req = indexedDB.open(DB_NAME, DB_VER);
   req.onupgradeneeded = e => {
-    const d       = e.target.result;
-    const oldVer  = e.oldVersion;  // アップグレード前のバージョン番号
+    const d      = e.target.result;
+    const oldVer = e.oldVersion;
 
     if (oldVer < 1) {
-      // 初回作成：historyストアとインデックスを全部作る
       const s = d.createObjectStore('history', {keyPath:'id', autoIncrement:true});
       s.createIndex('cat',   'categoryId', {unique:false});
       s.createIndex('date',  'date',       {unique:false});
       s.createIndex('gasId', 'gasId',      {unique:false});
     }
-
     if (oldVer === 1) {
-      // v1→v2: gasIdインデックスが抜けていたので追加
       const tx    = e.target.transaction;
       const store = tx.objectStore('history');
-      // インデックスがまだ無い場合だけ追加（二重作成防止）
       if (!store.indexNames.contains('gasId')) {
         store.createIndex('gasId', 'gasId', {unique:false});
       }
+    }
+    // v3: 保存した比較リストのストアを追加
+    if (!d.objectStoreNames.contains('compareSaved')) {
+      d.createObjectStore('compareSaved', {keyPath:'id', autoIncrement:true});
     }
   };
   req.onsuccess = e => { db = e.target.result; cb(); };
@@ -463,12 +506,19 @@ function initDB(cb) {
 // タブ
 // ══════════════════════════════════════════
 function switchTab(name) {
-  const names = ['calc','history','fav','settings'];
+  const names = ['calc','history','compare','fav','settings'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
+  const bar = document.getElementById('resultBar');
+  if (name !== 'calc') {
+    bar.classList.remove('show');
+  } else if (currentResult) {
+    bar.classList.add('show');
+  }
   if (name==='history') renderHistory();
   if (name==='fav')     renderFavList();
+  if (name==='compare') renderSavedCmpList();
 }
 
 // ══════════════════════════════════════════
@@ -606,8 +656,8 @@ function selectCategory(id) {
   if (!cat) return;
   document.getElementById('formTitle').textContent = cat.name+' の単価計算';
   document.getElementById('formCard').style.display = 'block';
-  document.getElementById('resultArea').style.display = 'none';
   currentResult = null;
+  document.getElementById('resultBar').classList.remove('show');
   renderForm(cat);
   clearDiscount();
 }
@@ -848,18 +898,23 @@ function calcBoth() {
   if (!selectedCatId) return;
   const r = calcOne(selectedCatId);
   currentResult = r;
-  if (!r) { document.getElementById('resultArea').style.display='none'; return; }
+
+  const bar = document.getElementById('resultBar');
+  if (!r) {
+    bar.classList.remove('show');
+    return;
+  }
 
   const dp = r.unitAfter ?? r.unitPrice;
-  let html = `
-    <div style="font-size:.7rem;opacity:.55;margin-bottom:4px">${r.cat.icon} ${r.cat.name} — ${r.label}</div>
-    <div class="r-main">${fmt(r.unitPrice)}<span>円 / ${r.unitLabel}</span></div>`;
-  if (r.unitAfter!==null) {
-    html += `<div class="r-sub">割引後: ${fmt(r.discountedPrice)}円</div>
-             <div class="r-after">→ ${fmt(r.unitAfter)}円 / ${r.unitLabel}</div>`;
-  }
-  document.getElementById('resultBox').innerHTML = html;
-  document.getElementById('resultArea').style.display = 'block';
+
+  // 固定バーを更新・表示
+  document.getElementById('barPrice').innerHTML =
+    `${fmt(r.unitPrice)}<span> 円/${r.unitLabel}</span>`;
+  document.getElementById('barAfter').textContent =
+    r.unitAfter!==null ? `割引後 → ${fmt(r.unitAfter)}円/${r.unitLabel}` : '';
+  document.getElementById('barInfo').textContent =
+    `${r.cat.icon} ${r.cat.name} — ${r.label}`;
+  bar.classList.add('show');
 }
 
 // ══════════════════════════════════════════
@@ -907,6 +962,115 @@ function removeFromCompare(id) {
 function clearCompare() {
   compareList = [];
   renderCompareList();
+}
+
+// ══════════════════════════════════════════
+// 比較保存
+// ══════════════════════════════════════════
+function openSaveCmpModal() {
+  if (compareList.length < 2) { alert('比較するには2件以上追加してください'); return; }
+  // タイトルのデフォルト値：カテゴリ名 + 今日の日付
+  const catName = compareList[0].catName || '';
+  const today   = new Date().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'});
+  document.getElementById('saveCmpTitle').value = `${catName}比較 ${today}`;
+  document.getElementById('saveCmpModal').classList.add('open');
+}
+
+function saveCompare() {
+  if (!db) return;
+  const title = document.getElementById('saveCmpTitle').value.trim() || '比較リスト';
+  const rec = {
+    title,
+    items:     JSON.parse(JSON.stringify(compareList)), // ディープコピー
+    savedAt:   new Date().toISOString(),
+    minPrice:  Math.min(...compareList.map(c => c.displayPrice)),
+  };
+  const tx = db.transaction('compareSaved','readwrite');
+  tx.objectStore('compareSaved').add(rec);
+  tx.oncomplete = () => {
+    closeModal('saveCmpModal');
+    updateCmpSavedBadge();
+    alert(`「${title}」を保存しました`);
+  };
+}
+
+function deleteSavedCmp(id) {
+  if (!confirm('この比較を削除しますか？')) return;
+  const tx = db.transaction('compareSaved','readwrite');
+  tx.objectStore('compareSaved').delete(id);
+  tx.oncomplete = () => { renderSavedCmpList(); updateCmpSavedBadge(); };
+}
+
+// 保存した比較を呼び出して比較リストに復元
+function loadSavedCmp(id) {
+  if (!db) return;
+  const tx  = db.transaction('compareSaved','readonly');
+  const req = tx.objectStore('compareSaved').get(id);
+  req.onsuccess = () => {
+    const r = req.result; if (!r) return;
+    compareList = r.items.map(item => ({...item, id: Date.now() + Math.random()}));
+    renderCompareList();
+    switchTab('calc');
+  };
+}
+
+function updateCmpSavedBadge() {
+  if (!db) return;
+  const tx  = db.transaction('compareSaved','readonly');
+  const req = tx.objectStore('compareSaved').count();
+  req.onsuccess = () => {
+    const badge = document.getElementById('cmpSavedBadge');
+    const count = req.result;
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = 'inline';
+    } else {
+      badge.style.display = 'none';
+    }
+  };
+}
+
+function renderSavedCmpList() {
+  if (!db) return;
+  const tx  = db.transaction('compareSaved','readonly');
+  const req = tx.objectStore('compareSaved').getAll();
+  req.onsuccess = () => {
+    const recs = req.result.reverse();
+    const el   = document.getElementById('savedCmpList');
+    updateCmpSavedBadge();
+    if (!recs.length) {
+      el.innerHTML = '<div class="empty-msg">保存した比較がありません<br>比較リストの「💾 保存」で保存できます</div>';
+      return;
+    }
+    el.innerHTML = recs.map(r => {
+      const d = new Date(r.savedAt);
+      const ds = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+      // 最安アイテムを先頭に
+      const sorted = [...r.items].sort((a,b) => a.displayPrice - b.displayPrice);
+      const itemsHtml = sorted.map((item, i) => `
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-top:1px solid var(--border)">
+          <span style="font-size:.65rem;color:${i===0?'var(--accent)':'var(--sub)'};font-weight:700;min-width:24px">${i===0?'最安':`${i+1}位`}</span>
+          <span style="font-size:.9rem">${item.catIcon}</span>
+          <span style="flex:1;font-size:.75rem;color:var(--sub)">${item.label}</span>
+          <span style="font-family:'Oswald',sans-serif;font-size:1rem;color:${i===0?'var(--accent)':'var(--text)'}">${fmt(item.displayPrice)}円</span>
+          <span style="font-size:.63rem;color:var(--sub)">/${item.unitLabel}</span>
+        </div>`).join('');
+      const maxP = Math.max(...r.items.map(c=>c.displayPrice));
+      const pct  = r.items.length>=2 ? ((maxP-r.minPrice)/maxP*100).toFixed(1) : null;
+      return `
+        <div class="card" style="margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-weight:700;font-size:.9rem">${r.title}</div>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-secondary btn-sm" onclick="loadSavedCmp(${r.id})" title="比較リストに読み込む">↩ 読込</button>
+              <button class="hi-del" onclick="deleteSavedCmp(${r.id})">🗑</button>
+            </div>
+          </div>
+          <div style="font-size:.7rem;color:var(--sub);margin-bottom:6px">${ds} · ${r.items.length}件比較${pct?` · 最大差${pct}%`:''}</div>
+          ${itemsHtml}
+        </div>`;
+    }).join('');
+  };
 }
 
 function renderCompareList() {
@@ -963,7 +1127,7 @@ function clearForm() {
   const cat=getAllCats().find(c=>c.id===selectedCatId);
   if(cat) renderForm(cat);
   clearDiscount();
-  document.getElementById('resultArea').style.display='none';
+  document.getElementById('resultBar').classList.remove('show');
   currentResult = null;
 }
 
