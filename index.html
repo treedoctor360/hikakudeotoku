@@ -131,6 +131,21 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
 .empty-msg{text-align:center;color:var(--sub);padding:28px 0;font-size:.85rem;line-height:1.8;}
 .badge{font-size:.68rem;background:var(--accent2);color:#fff;padding:1px 5px;border-radius:4px;vertical-align:middle;margin-left:4px;}
 
+/* 比較リスト */
+.cmp-item{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface);margin-bottom:8px;display:flex;align-items:center;gap:8px;position:relative;transition:border-color .15s;}
+.cmp-item.cheapest{border-color:var(--accent);background:#fdf1f0;}
+.cmp-item.cheapest::before{content:'最安';position:absolute;top:-1px;right:8px;background:var(--accent);color:#fff;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:0 0 4px 4px;}
+.cmp-rank{font-family:'Oswald',sans-serif;font-size:1rem;color:var(--sub);min-width:20px;text-align:center;}
+.cmp-rank.top{color:var(--accent);}
+.cmp-info{flex:1;}
+.cmp-name{font-size:.82rem;font-weight:700;}
+.cmp-label{font-size:.68rem;color:var(--sub);margin-top:1px;}
+.cmp-price{font-family:'Oswald',sans-serif;font-size:1.2rem;color:var(--text);white-space:nowrap;text-align:right;}
+.cmp-price.cheapest{color:var(--accent);}
+.cmp-unit{font-size:.65rem;color:var(--sub);text-align:right;}
+.cmp-del{background:none;border:none;color:var(--border);font-size:.9rem;cursor:pointer;padding:2px 4px;flex:0 0 auto;}
+.cmp-del:hover{color:var(--accent);}
+
 /* モーダル */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px;}
 .modal-overlay.open{display:flex;}
@@ -188,33 +203,21 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     <div class="card">
       <div class="card-title">この結果を...</div>
       <div class="btn-row">
-        <button class="btn btn-secondary btn-sm" onclick="copyToB()">🆚 B欄にコピーして比較</button>
+        <button class="btn btn-secondary btn-sm" onclick="addToCompare()">🆚 比較リストに追加</button>
         <button class="btn btn-green btn-sm" onclick="openSaveModal()">💾 履歴に保存</button>
       </div>
     </div>
   </div>
 
-  <div id="abArea" style="display:none">
+  <!-- 比較リスト -->
+  <div id="compareArea" style="display:none">
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="card-title" style="margin:0">A / B 比較</div>
-        <button class="btn btn-secondary btn-sm" onclick="clearAB()">クリア</button>
+        <div class="card-title" style="margin:0">🆚 比較リスト <span class="badge" id="compareBadge">0</span></div>
+        <button class="btn btn-secondary btn-sm" onclick="clearCompare()">全クリア</button>
       </div>
-      <div class="ab-wrap">
-        <div class="ab-col" id="abColA">
-          <div class="ab-lbl">A</div>
-          <div class="ab-info" id="abInfoA">—</div>
-          <div class="ab-price" id="abPriceA">—</div>
-          <div class="ab-unit" id="abUnitA"></div>
-        </div>
-        <div class="ab-col" id="abColB">
-          <div class="ab-lbl">B <span style="font-size:.63rem;color:var(--sub)" id="abBhint">（B欄にコピーで追加）</span></div>
-          <div class="ab-info" id="abInfoB">—</div>
-          <div class="ab-price" id="abPriceB">—</div>
-          <div class="ab-unit" id="abUnitB"></div>
-        </div>
-      </div>
-      <div id="abVerdict" style="text-align:center;font-size:.82rem;color:var(--sub);padding:4px 0"></div>
+      <div id="compareList"></div>
+      <div id="compareVerdict" style="text-align:center;font-size:.82rem;padding:6px 0"></div>
     </div>
   </div>
 </div>
@@ -371,8 +374,7 @@ const DB_VER  = 2;  // v2.2: gasIdインデックスを追加
 let db             = null;
 let selectedCatId  = null;
 let currentResult  = null;
-let abSlotA        = null;
-let abSlotB        = null;
+let compareList    = [];   // 比較リスト（何件でも追加可能）
 let favorites      = [];
 let userCategories = [];
 let stores         = [];   // 店舗マスタ
@@ -858,62 +860,111 @@ function calcBoth() {
   }
   document.getElementById('resultBox').innerHTML = html;
   document.getElementById('resultArea').style.display = 'block';
-
-  abSlotA = {...r, displayPrice: dp};
-  updateABSlot('A', abSlotA);
-  updateABVerdict();
 }
 
 // ══════════════════════════════════════════
-// A/B比較
+// 比較リスト（複数件対応）
 // ══════════════════════════════════════════
-function updateABSlot(slot, data) {
-  document.getElementById('abInfo'+slot).textContent  = data ? data.label : '—';
-  document.getElementById('abPrice'+slot).textContent = data ? fmt(data.displayPrice) : '—';
-  document.getElementById('abUnit'+slot).textContent  = data ? '円 / '+data.unitLabel : '';
-  if (slot==='B'&&data) document.getElementById('abBhint').style.display='none';
-  document.getElementById('abArea').style.display = (abSlotA||abSlotB) ? 'block' : 'none';
-}
-
-function updateABVerdict() {
-  const el = document.getElementById('abVerdict');
-  if (!abSlotA||!abSlotB) { el.textContent=''; return; }
-  const a=abSlotA.displayPrice, b=abSlotB.displayPrice;
-  if (a===b) { el.textContent='同じ単価です'; return; }
-  const w=a<b?'A':'B', pct=Math.abs((a-b)/Math.max(a,b)*100).toFixed(1);
-  el.innerHTML=`<strong style="color:var(--accent)">${w}の方が${pct}%お得</strong>`;
-  document.getElementById('abColA').classList.toggle('winner',a<b);
-  document.getElementById('abColB').classList.toggle('winner',b<a);
-  document.getElementById('abPriceA').classList.toggle('winner',a<b);
-  document.getElementById('abPriceB').classList.toggle('winner',b<a);
-}
-
-function copyToB() {
+function addToCompare() {
   if (!currentResult) return;
-  abSlotB = {...currentResult, displayPrice: currentResult.unitAfter??currentResult.unitPrice};
-  updateABSlot('B', abSlotB);
-  updateABVerdict();
+  const r = currentResult;
+  const dp = r.unitAfter ?? r.unitPrice;
+  compareList.push({
+    id: Date.now(),
+    catIcon: r.cat.icon, catName: r.cat.name,
+    label: r.label, unitLabel: r.unitLabel,
+    displayPrice: dp, unitPrice: r.unitPrice, unitAfter: r.unitAfter,
+  });
+  renderCompareList();
 }
 
-function clearAB() {
-  abSlotA=abSlotB=null;
-  ['A','B'].forEach(s=>{
-    document.getElementById('abInfo'+s).textContent='—';
-    document.getElementById('abPrice'+s).textContent='—';
-    document.getElementById('abUnit'+s).textContent='';
-    document.getElementById('abCol'+s).classList.remove('winner');
-    document.getElementById('abPrice'+s).classList.remove('winner');
-  });
-  document.getElementById('abBhint').style.display='';
-  document.getElementById('abVerdict').textContent='';
-  document.getElementById('abArea').style.display='none';
+// 履歴から比較リストに追加
+function histToCompare(id) {
+  if (!db) return;
+  const tx  = db.transaction('history','readonly');
+  const req = tx.objectStore('history').get(id);
+  req.onsuccess = () => {
+    const r = req.result; if (!r) return;
+    const dp = r.unitAfter!=null ? r.unitAfter : r.unitPrice;
+    compareList.push({
+      id: Date.now(),
+      catIcon: r.categoryIcon||'📦', catName: r.categoryName,
+      label: (r.productName ? r.productName+' / ' : '') + r.label,
+      unitLabel: r.unitLabel,
+      displayPrice: dp, unitPrice: r.unitPrice, unitAfter: r.unitAfter,
+    });
+    renderCompareList();
+    switchTab('calc');
+    alert(`「${r.productName||'履歴'}」を比較リストに追加しました`);
+  };
+}
+
+function removeFromCompare(id) {
+  compareList = compareList.filter(c => c.id !== id);
+  renderCompareList();
+}
+
+function clearCompare() {
+  compareList = [];
+  renderCompareList();
+}
+
+function renderCompareList() {
+  const badge = document.getElementById('compareBadge');
+  const area  = document.getElementById('compareArea');
+  const list  = document.getElementById('compareList');
+  const verd  = document.getElementById('compareVerdict');
+
+  badge.textContent = compareList.length;
+
+  if (compareList.length === 0) {
+    area.style.display = 'none';
+    return;
+  }
+  area.style.display = 'block';
+
+  // 最安値を探す
+  const minPrice = Math.min(...compareList.map(c => c.displayPrice));
+
+  // 安い順にソートしてから表示（元のcompareListは変えない）
+  const sorted = [...compareList].sort((a,b) => a.displayPrice - b.displayPrice);
+
+  list.innerHTML = sorted.map((c, i) => {
+    const isCheapest = c.displayPrice === minPrice;
+    const rankLabel  = i === 0 ? '1位' : `${i+1}位`;
+    return `
+      <div class="cmp-item ${isCheapest ? 'cheapest' : ''}">
+        <div class="cmp-rank ${isCheapest ? 'top' : ''}">${rankLabel}</div>
+        <div style="font-size:1.2rem">${c.catIcon}</div>
+        <div class="cmp-info">
+          <div class="cmp-name">${c.catName}</div>
+          <div class="cmp-label">${c.label}</div>
+          ${c.unitAfter!=null ? '<div style="font-size:.65rem;color:var(--accent)">割引後</div>' : ''}
+        </div>
+        <div>
+          <div class="cmp-price ${isCheapest ? 'cheapest' : ''}">${fmt(c.displayPrice)}円</div>
+          <div class="cmp-unit">/${c.unitLabel}</div>
+        </div>
+        <button class="cmp-del" onclick="removeFromCompare(${c.id})">✕</button>
+      </div>`;
+  }).join('');
+
+  // 最安と最高の差を表示
+  if (compareList.length >= 2) {
+    const maxPrice = Math.max(...compareList.map(c => c.displayPrice));
+    const pct = ((maxPrice - minPrice) / maxPrice * 100).toFixed(1);
+    verd.innerHTML = `<strong style="color:var(--accent)">最安と最高の差: ${pct}%</strong>`;
+  } else {
+    verd.textContent = '';
+  }
 }
 
 function clearForm() {
   const cat=getAllCats().find(c=>c.id===selectedCatId);
   if(cat) renderForm(cat);
-  clearDiscount(); clearAB();
+  clearDiscount();
   document.getElementById('resultArea').style.display='none';
+  currentResult = null;
 }
 
 // ══════════════════════════════════════════
@@ -1064,7 +1115,7 @@ function renderHistory() {
         </div>
         <div class="hi-actions">
           <div class="hi-price">${fmt(dp)}円<br><span style="font-size:.62rem">/${r.unitLabel}</span></div>
-          <button class="btn btn-secondary btn-sm" onclick="histToAB(${r.id})" title="比較B欄へ">🆚</button>
+          <button class="btn btn-secondary btn-sm" onclick="histToCompare(${r.id})" title="比較リストへ">🆚</button>
           <button class="hi-del" onclick="deleteHistory(${r.id})">🗑</button>
         </div>
       </div>`;
@@ -1072,20 +1123,8 @@ function renderHistory() {
   };
 }
 
-function histToAB(id) {
-  if(!db) return;
-  const tx=db.transaction('history','readonly');
-  const req=tx.objectStore('history').get(id);
-  req.onsuccess=()=>{
-    const r=req.result; if(!r) return;
-    const dp=r.unitAfter!=null?r.unitAfter:r.unitPrice;
-    const cat=getAllCats().find(c=>c.id===r.categoryId)||{id:r.categoryId,name:r.categoryName,icon:r.categoryIcon};
-    abSlotB={cat,label:r.label,unitPrice:r.unitPrice,unitAfter:r.unitAfter,unitLabel:r.unitLabel,displayPrice:dp};
-    updateABSlot('B',abSlotB); updateABVerdict();
-    switchTab('calc');
-    alert(`「${r.productName||'履歴'}」をB欄にセットしました`);
-  };
-}
+
+
 
 function deleteHistory(id) {
   if(!confirm('削除しますか？\nGASと同期済みの場合、スプレッドシートからも削除されます')) return;
