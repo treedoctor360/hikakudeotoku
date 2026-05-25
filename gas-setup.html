@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAS設定手順書 — お買い物比較チェック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f3ee;
+  --surface: #ffffff;
+  --surface2: #f0ede6;
+  --border: #d8d2c8;
+  --accent: #c0392b;
+  --accent2: #2c7a4b;
+  --text: #1a1a1a;
+  --sub: #6b6460;
+  --r: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'BIZ UDGothic', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ヘッダー */
+.site-header {
+  background: var(--text);
+  color: #fff;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.site-header .logo {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: .04em;
+}
+.site-header .sub {
+  font-size: .72rem;
+  opacity: .5;
+}
+.back-btn {
+  margin-left: auto;
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: .78rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.back-btn:hover { background: rgba(255,255,255,.25); }
+
+/* メイン */
+.container { max-width: 680px; margin: 0 auto; padding: 16px; }
+
+/* カード */
+.card {
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+}
+
+/* ページタイトル */
+.page-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+  letter-spacing: .03em;
+}
+.page-lead {
+  font-size: .82rem;
+  color: var(--sub);
+  line-height: 1.6;
+}
+
+/* セクションタイトル */
+.sec-title {
+  font-size: .72rem;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+/* ステップ */
+.steps { display: flex; flex-direction: column; gap: 16px; }
+.step { display: flex; gap: 14px; align-items: flex-start; }
+.step-num {
+  background: var(--accent);
+  color: #fff;
+  font-family: 'Oswald', sans-serif;
+  font-size: .9rem;
+  font-weight: 600;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.step-body { flex: 1; }
+.step-title { font-size: .92rem; font-weight: 700; margin-bottom: 5px; }
+.step-desc { font-size: .78rem; color: var(--sub); line-height: 1.7; }
+.step-desc b { color: var(--text); }
+
+/* テーブル */
+.setting-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: .78rem; }
+.setting-table th, .setting-table td { padding: 7px 10px; border: 1px solid var(--border); text-align: left; }
+.setting-table th { background: var(--surface2); font-weight: 700; color: var(--sub); }
+.setting-table td b { color: var(--accent); }
+
+/* コードブロック */
+.code-block {
+  background: #1a1a1a;
+  color: #f9c74f;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'Courier New', monospace;
+  font-size: .78rem;
+  margin: 8px 0;
+  word-break: break-all;
+  line-height: 1.6;
+}
+
+/* 注意・ポイントボックス */
+.note-box {
+  background: #fdf1f0;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 12px;
+  font-size: .78rem;
+  color: var(--sub);
+  margin: 10px 0;
+  line-height: 1.6;
+}
+.tip-box {
+  background: #f0faf4;
+  border-left: 3px solid var(--accent2);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 12px;
+  font-size: .78rem;
+  color: var(--sub);
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
+/* 同期の仕組み */
+.sync-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.sync-item {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: .75rem;
+  color: var(--sub);
+  line-height: 1.5;
+}
+.sync-item .sync-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+.sync-item .sync-lbl { font-weight: 700; color: var(--text); }
+
+/* トラブル */
+.trouble-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: .78rem;
+}
+.trouble-q { font-weight: 700; margin-bottom: 4px; color: var(--accent); }
+.trouble-a { color: var(--sub); line-height: 1.6; }
+
+/* リンクボタン */
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: .85rem;
+  font-weight: 700;
+  font-family: inherit;
+  margin-top: 4px;
+}
+.link-btn:hover { background: #a93226; }
+
+/* スプレッドシート列説明 */
+.col-list { display: flex; flex-direction: column; gap: 4px; }
+.col-item { display: flex; gap: 8px; font-size: .75rem; align-items: baseline; }
+.col-letter { font-family: 'Oswald', sans-serif; color: var(--accent); font-size: .85rem; min-width: 20px; }
+.col-name { color: var(--sub); }
+
+.divider { border: none; border-top: 1px dashed var(--border); margin: 4px 0 14px; }
+
+footer {
+  text-align: center;
+  padding: 24px 0 40px;
+  font-size: .72rem;
+  color: var(--sub);
+}
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <div>
+    <div class="logo">📦 お買い物比較チェック</div>
+    <div class="sub">GAS設定手順書</div>
+  </div>
+  <a class="back-btn" href="./index.html">← アプリに戻る</a>
+</div>
+
+<div class="container">
+
+  <!-- タイトル -->
+  <div class="card">
+    <div class="page-title">☁️ GAS設定手順書</div>
+    <hr class="divider">
+    <div class="page-lead">
+      Googleスプレッドシートを使って、家族やグループで単価情報を共有する設定手順です。<br>
+      GASの設定は1回だけ。設定後は保存したデータが自動でスプレッドシートに記録され、パートナーのスマホから取得できるようになります。
+    </div>
+    <div class="tip-box" style="margin-top:12px">
+      💡 GAS設定なしでも、単価計算・比較・履歴保存など全ての機能はそのまま使えます。
+    </div>
+  </div>
+
+  <!-- 必要なもの -->
+  <div class="card">
+    <div class="sec-title">必要なもの</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">✓</div>
+        <div class="step-body">
+          <div class="step-title">Google アカウント</div>
+          <div class="step-desc">スプレッドシートを作成するために必要です。共有メンバー全員が同じスプレッドシートを使います（アカウントは1つでOK）。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">✓</div>
+        <div class="step-body">
+          <div class="step-title">GASスクリプト（gas-script.js）</div>
+          <div class="step-desc">下のリンクからスクリプトの内容を確認できます。全て選択してコピーして使います。</div>
+          <a class="link-btn" href="./gas-script.js" target="_blank">💻 GASスクリプトを開く</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定手順 -->
+  <div class="card">
+    <div class="sec-title">設定手順（5ステップ）</div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">スプレッドシートを新規作成する</div>
+          <div class="step-desc">
+            <a href="https://sheets.google.com" target="_blank" style="color:var(--accent)">Googleスプレッドシート</a>を開き、「新しいスプレッドシート」を作成します。<br><br>
+            ファイル名は任意です（例:「お買い物比較 共有履歴」）。<br><br>
+            <b>複数人で共有する場合：</b>右上の「共有」ボタン → 共有したいメンバーのGmailアドレスを入力 → 権限を「編集者」に設定。
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Apps Scriptを開く</div>
+          <div class="step-desc">
+            スプレッドシートのメニューから<br>
+            <b>「拡張機能」→「Apps Script」</b>をクリック。<br><br>
+            新しいタブでスクリプトエディタが開きます。左側に「コード.gs」が表示されます。
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">スクリプトを貼り付けて保存する</div>
+          <div class="step-desc">
+            1. エディタ内の既存の内容を<b>全て削除</b><br>
+            2. <a href="./gas-script.js" target="_blank" style="color:var(--accent)">gas-script.js</a>の内容を<b>全て選択してコピー</b><br>
+            3. エディタに<b>貼り付け</b><br>
+            4. 左上のフロッピーアイコン（または <b>Ctrl+S</b>）で<b>保存</b>
+          </div>
+          <div class="note-box" style="margin-top:8px">
+            ⚠️ 「コード.gs」と表示されている状態で貼り付けてください。関数名が「doGet」になっていればOKです。
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">ウェブアプリとしてデプロイする</div>
+          <div class="step-desc">
+            1. 右上の<b>「デプロイ」</b>→<b>「新しいデプロイ」</b>をクリック<br>
+            2. 「種類の選択」で<b>「ウェブアプリ」</b>を選択<br>
+            3. 以下の通りに設定する：
+          </div>
+          <table class="setting-table">
+            <tr><th>項目</th><th>設定値</th></tr>
+            <tr><td>次のユーザーとして実行</td><td><b>自分</b></td></tr>
+            <tr><td>アクセスできるユーザー</td><td><b>全員</b></td></tr>
+          </table>
+          <div class="step-desc">
+            4. <b>「デプロイ」</b>ボタンをクリック<br>
+            5. 初回は権限の確認が必要：<br>
+            　「権限を確認」→ Googleアカウントを選択 →「詳細」→「安全でないページに移動」→「許可」<br>
+            6. 表示された<b>「ウェブアプリURL」</b>をコピーしておく
+          </div>
+          <div class="note-box">
+            ⚠️「全員」に設定しないとスマホからアクセスできません。<br>
+            ⚠️「安全でないページ」の警告はGoogleの審査を受けていない個人スクリプトのため正常です。
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">アプリにURLとキーワードを設定する</div>
+          <div class="step-desc">
+            アプリの<b>「設定」タブ</b>→「☁️ GAS連携」を開き、以下を入力して「保存」をタップ：
+          </div>
+          <table class="setting-table" style="margin-top:8px">
+            <tr><th>入力欄</th><th>内容</th></tr>
+            <tr><td>GAS URL</td><td>手順4でコピーしたURL</td></tr>
+            <tr><td>グループキーワード</td><td>グループ内で共有する合言葉（例: 〇〇家族、hikakudeotokune）</td></tr>
+          </table>
+          <div class="step-desc" style="margin-top:8px">
+            「<b>接続テスト</b>」をタップして ✅ が表示されれば設定完了です。
+          </div>
+          <div class="tip-box">
+            💡 グループキーワードは同じスプレッドシートを複数グループで使う場合にデータを分けるための合言葉です。共有メンバー全員が<b>同じキーワード</b>を設定してください。
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- パートナー側の設定 -->
+  <div class="card">
+    <div class="sec-title">パートナー・共有メンバー側の設定</div>
+    <div class="step-desc" style="margin-bottom:12px">
+      設定した人から以下の2つを共有してもらいます：
+    </div>
+    <div class="code-block">① GASのウェブアプリURL<br>② グループキーワード</div>
+    <div class="step-desc">
+      受け取ったら、アプリの「設定」タブで同じURLとキーワードを入力して「保存」するだけです。GASスクリプトの設定は不要です。
+    </div>
+  </div>
+
+  <!-- 同期の仕組み -->
+  <div class="card">
+    <div class="sec-title">同期の仕組み</div>
+    <div class="sync-grid">
+      <div class="sync-item">
+        <span class="sync-icon">💾</span>
+        <span class="sync-lbl">保存時</span><br>
+        自動でスプレッドシートに送信されます
+      </div>
+      <div class="sync-item">
+        <span class="sync-icon">📱</span>
+        <span class="sync-lbl">アプリ起動時</span><br>
+        自動で最新データを取得します
+      </div>
+      <div class="sync-item">
+        <span class="sync-icon">☁️</span>
+        <span class="sync-lbl">手動取得</span><br>
+        「履歴」タブの「☁️ 取得」ボタンで即時取得
+      </div>
+      <div class="sync-item">
+        <span class="sync-icon">🏪</span>
+        <span class="sync-lbl">店舗も同期</span><br>
+        設定タブ「☁️ 店舗を取得」で店舗一覧を共有
+      </div>
+    </div>
+  </div>
+
+  <!-- スプレッドシートの構成 -->
+  <div class="card">
+    <div class="sec-title">自動作成されるシートの構成</div>
+    <div class="step-desc" style="margin-bottom:10px">初回保存時に「単価履歴」と「店舗マスタ」シートが自動で作成されます。</div>
+    <div class="col-list">
+      <div class="col-item"><span class="col-letter">A</span><span class="col-name">gasId（管理用の一意ID）</span></div>
+      <div class="col-item"><span class="col-letter">B</span><span class="col-name">date（日付）</span></div>
+      <div class="col-item"><span class="col-letter">C</span><span class="col-name">categoryName（カテゴリ名）</span></div>
+      <div class="col-item"><span class="col-letter">E</span><span class="col-name">productName（商品名）</span></div>
+      <div class="col-item"><span class="col-letter">F</span><span class="col-name">storeName（店舗名）</span></div>
+      <div class="col-item"><span class="col-letter">H</span><span class="col-name">unitPrice（単価・割引前）</span></div>
+      <div class="col-item"><span class="col-letter">I</span><span class="col-name">unitAfter（単価・割引後）</span></div>
+      <div class="col-item"><span class="col-letter">M</span><span class="col-name">memo（メモ）</span></div>
+      <div class="col-item"><span class="col-letter">P</span><span class="col-name">groupKey（グループキーワード）</span></div>
+      <div class="col-item"><span class="col-letter">Q</span><span class="col-name">deleted（削除フラグ）</span></div>
+    </div>
+  </div>
+
+  <!-- トラブルシューティング -->
+  <div class="card">
+    <div class="sec-title">よくある問題と解決方法</div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">❌ 接続テストが失敗する</div>
+      <div class="trouble-a">デプロイ設定の「アクセスできるユーザー」が「全員」になっているか確認してください。設定後は「新しいデプロイ」ではなく「デプロイを管理」→ 編集（鉛筆アイコン）→「バージョン: 新しいバージョン」→「デプロイ」で更新してください。</div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">❌ 保存してもスプレッドシートに反映されない</div>
+      <div class="trouble-a">GASスクリプトを更新した場合は必ず「デプロイを管理」から再デプロイが必要です。「新しいデプロイ」をするとURLが変わるので注意してください。</div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">❌ 取得しても相手のデータが表示されない</div>
+      <div class="trouble-a">グループキーワードが完全に一致しているか確認してください（大文字小文字・スペースも区別されます）。アプリの設定タブで確認・修正してください。</div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">⚠️ 「安全でないページ」の警告が出る</div>
+      <div class="trouble-a">Googleの審査を受けていない個人スクリプトのため表示される正常な警告です。「詳細」→「安全でないページに移動」→「許可」と進んでください。</div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">❌ スクリプトを更新したのに動作が変わらない</div>
+      <div class="trouble-a">スクリプト保存後、必ず「デプロイを管理」→ 編集 →「バージョン: 新しいバージョン」→「デプロイ」で再デプロイしてください。保存だけでは反映されません。</div>
+    </div>
+
+  </div>
+
+  <footer>
+    お買い物比較チェック — GAS設定手順書<br>
+    <a href="./index.html" style="color:var(--accent)">← アプリに戻る</a>
+  </footer>
+
+</div>
+</body>
+</html>
