@@ -306,7 +306,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     <p style="font-size:.72rem;color:var(--sub);margin-bottom:8px">追加すると自動でスプレッドシートにも保存。「☁️ 取得」でパートナーの店舗を取り込めます</p>
     <div id="storeList"></div>
     <div class="form-row" style="margin-top:8px">
-      <div class="fg"><input type="text" id="newStoreName" placeholder="例: 平和堂" style="font-size:.9rem"></div>
+      <div class="fg"><input type="text" id="newStoreName" placeholder="例: びわこスーパー" style="font-size:.9rem"></div>
       <button class="btn btn-secondary btn-sm" onclick="addStore()">追加</button>
     </div>
   </div>
@@ -527,7 +527,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
       <div class="howto-num">5</div>
       <div class="howto-body">
         <div class="howto-title">グループキーワードとは</div>
-        <div class="howto-desc">同じスプレッドシートを複数グループで使う場合に、データを分けるための合言葉です。同じグループのメンバー全員が<b>同じキーワード</b>を設定してください。<br>例:「yamada-family」「tomodachi1」など</div>
+        <div class="howto-desc">同じスプレッドシートを複数グループで使う場合に、データを分けるための合言葉です。同じグループのメンバー全員が<b>同じキーワード</b>を設定してください。<br>例:「○○家族」「hikakudeotokune」など</div>
       </div>
     </div>
 
@@ -540,9 +540,10 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     </div>
   </div>
 
-  <div style="text-align:center;color:var(--sub);font-size:.72rem;padding:16px 0">
-    お買い物比較チェック v3.0<br>
-    ご不明な点はアプリ作成者にお問い合わせください
+  <div style="text-align:center;color:var(--sub);font-size:.72rem;padding:16px 0 24px">
+    お買い物比較チェック v3.0<br><br>
+    © 2026 Koh Kitsukawa. All rights reserved.<br>
+    本システムの無断複製・転載・商用利用を禁じます。
   </div>
 
 </div>
@@ -566,17 +567,17 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   <div class="modal">
     <h3>💾 履歴に保存</h3>
     <div class="fg"><label>商品名（任意）</label>
-      <input type="text" id="saveProductName" placeholder="例: アタック Neo 800ml"></div>
+      <input type="text" id="saveProductName" placeholder="例: いつもの洗剤 800ml"></div>
     <div class="fg"><label>店舗</label>
       <select id="saveStoreSelect" onchange="syncStoreInput()">
         <option value="">-- 選択 --</option>
       </select></div>
     <div class="fg"><label>店舗名（直接入力 / 選択で自動入力）</label>
-      <input type="text" id="saveStoreName" placeholder="例: フレンドマート"></div>
+      <input type="text" id="saveStoreName" placeholder="例: おとくマート"></div>
     <div class="fg"><label>日付</label>
       <input type="date" id="saveDate"></div>
     <div class="fg"><label>メモ（任意）</label>
-      <input type="text" id="saveMemo" placeholder="例: 特売・Amazon定期便"></div>
+      <input type="text" id="saveMemo" placeholder="例: 特売・定期便など"></div>
     <div class="btn-row">
       <button class="btn btn-green" onclick="saveToHistory()">保存する</button>
       <button class="btn btn-secondary" onclick="closeModal('saveModal')">キャンセル</button>
@@ -589,7 +590,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   <div class="modal">
     <h3>⭐ お気に入り登録</h3>
     <div class="fg"><label>名前</label>
-      <input type="text" id="favName" placeholder="例: いつものアタック"></div>
+      <input type="text" id="favName" placeholder="例: いつものティッシュ"></div>
     <div class="btn-row">
       <button class="btn btn-gold" onclick="saveFav()">登録する</button>
       <button class="btn btn-secondary" onclick="closeModal('favSaveModal')">キャンセル</button>
