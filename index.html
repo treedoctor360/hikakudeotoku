@@ -131,21 +131,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
 .empty-msg{text-align:center;color:var(--sub);padding:28px 0;font-size:.85rem;line-height:1.8;}
 .badge{font-size:.68rem;background:var(--accent2);color:#fff;padding:1px 5px;border-radius:4px;vertical-align:middle;margin-left:4px;}
 
-/* 固定結果バー */
-.result-bar{
-  display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;
-  background:var(--text);color:#fff;
-  padding:10px 16px;
-  box-shadow:0 -4px 16px rgba(0,0,0,.25);
-}
-.result-bar.show{display:block;}
-.result-bar-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px;}
-.result-bar-price{font-family:'Oswald',sans-serif;font-size:1.6rem;color:var(--gold);line-height:1;white-space:nowrap;}
-.result-bar-price span{font-size:.8rem;color:rgba(255,255,255,.6);}
-.result-bar-after{font-size:.75rem;color:rgba(255,255,255,.6);margin-top:2px;}
-.result-bar-info{flex:1;font-size:.68rem;opacity:.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.result-bar-btns{display:flex;gap:6px;flex-shrink:0;}
-.cmp-item{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface);margin-bottom:8px;display:flex;align-items:center;gap:8px;position:relative;transition:border-color .15s;}
+/* モーダル */.cmp-item{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface);margin-bottom:8px;display:flex;align-items:center;gap:8px;position:relative;transition:border-color .15s;}
 .cmp-item.cheapest{border-color:var(--accent);background:#fdf1f0;}
 .cmp-item.cheapest::before{content:'最安';position:absolute;top:-1px;right:8px;background:var(--accent);color:#fff;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:0 0 4px 4px;}
 .cmp-rank{font-family:'Oswald',sans-serif;font-size:1rem;color:var(--sub);min-width:20px;text-align:center;}
@@ -166,6 +152,18 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
 .modal h3{font-size:.95rem;margin-bottom:12px;}
 .modal .fg{margin-bottom:8px;}
 .modal .btn-row{margin-top:12px;}
+
+/* 使い方タブ */
+.howto-section{display:flex;flex-direction:column;gap:12px;}
+.howto-step{display:flex;gap:10px;align-items:flex-start;}
+.howto-num{background:var(--accent);color:#fff;font-family:'Oswald',sans-serif;font-size:.8rem;font-weight:700;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.howto-body{flex:1;}
+.howto-title{font-size:.88rem;font-weight:700;margin-bottom:3px;}
+.howto-desc{font-size:.78rem;color:var(--sub);line-height:1.6;}
+.howto-cat-block{border-top:1px dashed var(--border);padding:10px 0;}
+.howto-cat-block:first-child{border-top:none;padding-top:0;}
+.howto-cat-title{font-size:.88rem;font-weight:700;margin-bottom:4px;}
+.howto-example{background:var(--surface2);border-radius:6px;padding:8px 10px;font-size:.75rem;color:var(--text);line-height:1.7;margin-top:6px;}
 </style>
 </head>
 <body>
@@ -182,6 +180,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   <div class="tab" onclick="switchTab('compare')">比較 <span class="badge" id="cmpSavedBadge" style="display:none"></span></div>
   <div class="tab" onclick="switchTab('fav')">お気に入り</div>
   <div class="tab" onclick="switchTab('settings')">設定</div>
+  <div class="tab" onclick="switchTab('howto')">使い方</div>
 </div>
 
 <!-- ══ 計算タブ ══ -->
@@ -273,6 +272,10 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   <div class="card">
     <div class="card-title">☁️ GAS連携（グループ共有）</div>
     <p style="font-size:.75rem;color:var(--sub);margin-bottom:10px">GAS URLとグループキーワードを設定すると、同じキーワードのメンバーとデータを共有できます</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <a href="./gas-setup.html" target="_blank" class="btn btn-primary btn-sm">📋 設定手順書を見る</a>
+      <a href="./gas-script.js" target="_blank" class="btn btn-secondary btn-sm">💻 GASスクリプト</a>
+    </div>
     <div class="gas-input-wrap">
       <input type="url" id="gasUrl" placeholder="https://script.google.com/macros/s/...">
       <button class="btn btn-blue btn-sm" onclick="saveGasSettings()">保存</button>
@@ -290,6 +293,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     </div>
     <div class="btn-row">
       <button class="btn btn-green btn-sm" onclick="testGasConnection()">接続テスト</button>
+      <button class="btn btn-secondary btn-sm" onclick="switchTab('howto');setTimeout(()=>document.getElementById('howto-gas').scrollIntoView({behavior:'smooth'}),100)">📋 設定手順を見る</button>
     </div>
   </div>
 
@@ -323,6 +327,224 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     </div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
   </div>
+</div>
+
+<!-- ══ 使い方タブ ══ -->
+<div id="tab-howto" class="page">
+
+  <!-- 基本的な使い方 -->
+  <div class="card">
+    <div class="card-title">📱 基本的な使い方</div>
+    <div class="howto-section">
+      <div class="howto-step">
+        <div class="howto-num">1</div>
+        <div class="howto-body">
+          <div class="howto-title">カテゴリを選ぶ</div>
+          <div class="howto-desc">「計算」タブで商品のカテゴリをタップします。肉・魚、トイレットペーパー、洗剤など7種類が初めから登録されています。「＋追加」で自由に増やせます。</div>
+        </div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-num">2</div>
+        <div class="howto-body">
+          <div class="howto-title">数値を入力する</div>
+          <div class="howto-desc">各欄に数値を入力すると即座に単価が計算されます。<strong>値段欄はまとめ買いの合計値段</strong>を入力してください。</div>
+        </div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-num">3</div>
+        <div class="howto-body">
+          <div class="howto-title">比較・保存する</div>
+          <div class="howto-desc">結果を「🆚 比較リストに追加」で複数並べて比較、「💾 履歴に保存」で記録できます。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- カテゴリ別入力例 -->
+  <div class="card">
+    <div class="card-title">🛒 カテゴリ別・入力例</div>
+
+    <div class="howto-cat-block">
+      <div class="howto-cat-title">🥩 肉・魚</div>
+      <div class="howto-desc">グラム数（1パック）・個数・合計値段を入力 → <strong>100g単価</strong>を表示</div>
+      <div class="howto-example">
+        例：豚バラ 300g × 2パック 1,000円の場合<br>
+        グラム数: <b>300</b> ／ 個数: <b>2</b> ／ 合計値段: <b>1000</b><br>
+        → 100g単価 <b>166.67円</b>
+      </div>
+      <div class="howto-desc" style="margin-top:6px">割引がある場合は「割引率」または「割引後の値段」を入力すると割引後単価も表示されます。</div>
+    </div>
+
+    <div class="howto-cat-block">
+      <div class="howto-cat-title">🧻 トイレットペーパー</div>
+      <div class="howto-desc">1パックのロール数・1ロールの長さ・個数・合計値段を入力 → <strong>1m単価</strong>を表示</div>
+      <div class="howto-example">
+        例：12ロール入り（1ロール25m）が1個 550円<br>
+        ロール数: <b>12</b> ／ 1ロール: <b>25</b>m ／ 個数: <b>1</b> ／ 合計値段: <b>550</b><br>
+        → 1m単価 <b>1.83円</b><br><br>
+        例：倍巻き（1ロール50m）なら 1ロール欄に <b>50</b> と入力
+      </div>
+    </div>
+
+    <div class="howto-cat-block">
+      <div class="howto-cat-title">🤧 ティッシュ</div>
+      <div class="howto-desc">1箱の組数・パック数・個数・合計値段を入力 → <strong>100組単価</strong>を表示</div>
+      <div class="howto-example">
+        例：200組入り × 5箱パック 400円<br>
+        1箱の組数: <b>200</b> ／ パック数: <b>5</b> ／ 個数: <b>1</b> ／ 合計値段: <b>400</b><br>
+        → 100組単価 <b>40円</b>（400円 ÷ 1000組 × 100）
+      </div>
+    </div>
+
+    <div class="howto-cat-block">
+      <div class="howto-cat-title">🍳 キッチンペーパー</div>
+      <div class="howto-desc">1ロールのカット数・ロール数・個数・合計値段を入力 → <strong>1カット単価</strong>を表示</div>
+      <div class="howto-example">
+        例：50カット × 3ロール 280円<br>
+        カット数: <b>50</b> ／ ロール数: <b>3</b> ／ 個数: <b>1</b> ／ 合計値段: <b>280</b><br>
+        → 1カット単価 <b>1.87円</b>
+      </div>
+    </div>
+
+    <div class="howto-cat-block">
+      <div class="howto-cat-title">🫙 ラップ</div>
+      <div class="howto-desc">長さ・個数・合計値段を入力 → <strong>1m単価</strong>を表示</div>
+      <div class="howto-example">
+        例：50m ラップ 200円<br>
+        長さ: <b>50</b>m ／ 個数: <b>1</b> ／ 合計値段: <b>200</b><br>
+        → 1m単価 <b>4円</b>
+      </div>
+    </div>
+
+    <div class="howto-cat-block">
+      <div class="howto-cat-title">🧴 洗剤・シャンプー / 🍶 飲料・調味料</div>
+      <div class="howto-desc">容量（1個あたりml）・個数・合計値段・単価基準を入力</div>
+      <div class="howto-example">
+        例：シャンプー 800ml × 6個セット 6,900円<br>
+        容量: <b>800</b>ml ／ 個数: <b>6</b> ／ 合計値段: <b>6900</b> ／ 基準: <b>100ml単価</b><br>
+        → 100ml単価 <b>143.75円</b><br><br>
+        単価基準は「100ml」「1L」「1ml」から選択できます。<br>
+        Amazonなど大容量と比較するときは<b>1L単価</b>が便利です。
+      </div>
+    </div>
+  </div>
+
+  <!-- 比較機能 -->
+  <div class="card">
+    <div class="card-title">🆚 比較機能の使い方</div>
+    <div class="howto-section">
+      <div class="howto-step">
+        <div class="howto-num">1</div>
+        <div class="howto-body">
+          <div class="howto-title">計算結果を比較リストに追加</div>
+          <div class="howto-desc">計算結果の下にある「🆚 比較リストに追加」をタップ。何件でも追加できます。最安値が赤くハイライトされます。</div>
+        </div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-num">2</div>
+        <div class="howto-body">
+          <div class="howto-title">比較を保存する</div>
+          <div class="howto-desc">比較リストの「💾 保存」でタイトルをつけて保存。「比較」タブからいつでも見直せます。「↩ 読込」で過去の比較リストを復元できます。</div>
+        </div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-num">3</div>
+        <div class="howto-body">
+          <div class="howto-title">履歴から比較に追加</div>
+          <div class="howto-desc">「履歴」タブの各項目にある「🆚」ボタンで、過去に保存した商品を比較リストに追加できます。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- お気に入り -->
+  <div class="card">
+    <div class="card-title">⭐ お気に入りの使い方</div>
+    <div class="howto-desc" style="margin-bottom:8px">よく買う商品の入力値を登録しておくと、次回から1タップで呼び出せます。</div>
+    <div class="howto-step" style="margin-bottom:8px">
+      <div class="howto-num">登録</div>
+      <div class="howto-body">
+        <div class="howto-desc">計算後、入力フォームの「⭐ お気に入り登録」をタップ → 名前をつけて保存（例:「いつものアタック」）</div>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">呼出</div>
+      <div class="howto-body">
+        <div class="howto-desc">「お気に入り」タブの「呼出」ボタンで入力値を復元して再計算。今日の値段に変わっていれば値段だけ変更すればOK。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAS設定 -->
+  <div class="card" id="howto-gas">
+    <div class="card-title">☁️ GAS連携・夫婦/グループ共有</div>
+    <div class="howto-desc" style="margin-bottom:10px">Googleスプレッドシートを使って、家族やグループで単価情報を共有できます。</div>
+
+    <!-- GASスクリプトへのリンク -->
+    <a href="https://treedoctor360.github.io/hikakudeotoku/gas-script.js"
+       target="_blank"
+       style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;text-decoration:none;color:var(--text);margin-bottom:12px">
+      <span style="font-size:1.2rem">📄</span>
+      <div>
+        <div style="font-size:.85rem;font-weight:700">GASスクリプト（gas-script.js）</div>
+        <div style="font-size:.72rem;color:var(--sub)">タップして開き、全選択してコピーしてください</div>
+      </div>
+      <span style="margin-left:auto;color:var(--sub);font-size:.8rem">↗</span>
+    </a>
+
+    <div class="howto-step">
+      <div class="howto-num">1</div>
+      <div class="howto-body">
+        <div class="howto-title">スプレッドシートを作成</div>
+        <div class="howto-desc"><a href="https://sheets.google.com" target="_blank" style="color:var(--accent)">Googleスプレッドシート</a>を新規作成。共有メンバーのGmailで「編集者」として共有しておきます。</div>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">2</div>
+      <div class="howto-body">
+        <div class="howto-title">Apps Scriptを設定</div>
+        <div class="howto-desc">スプレッドシートのメニュー「拡張機能」→「Apps Script」を開きます。上の「📄 GASスクリプト」をタップして内容を全選択してコピーし、Apps Scriptの編集画面に全て貼り付けて保存（💾）します。</div>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">3</div>
+      <div class="howto-body">
+        <div class="howto-title">ウェブアプリとしてデプロイ</div>
+        <div class="howto-desc">「デプロイ」→「新しいデプロイ」→「ウェブアプリ」を選択。<br>
+          ・次のユーザーとして実行: <b>自分</b><br>
+          ・アクセスできるユーザー: <b>全員</b><br>
+          デプロイ後に表示される<b>ウェブアプリURL</b>をコピーします。</div>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">4</div>
+      <div class="howto-body">
+        <div class="howto-title">アプリに設定する</div>
+        <div class="howto-desc">「設定」タブの「GAS連携」欄にURLとグループキーワードを入力して「保存」。「接続テスト」で✅が出れば完了です。</div>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">5</div>
+      <div class="howto-body">
+        <div class="howto-title">グループキーワードとは</div>
+        <div class="howto-desc">同じスプレッドシートを複数グループで使う場合に、データを分けるための合言葉です。同じグループのメンバー全員が<b>同じキーワード</b>を設定してください。<br>例:「yamada-family」「tomodachi1」など</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:8px;padding:10px;margin-top:8px;font-size:.75rem;color:var(--sub)">
+      💡 <b>同期の仕組み</b><br>
+      保存時 → 自動でスプレッドシートに送信<br>
+      アプリ起動時 → 自動でスプレッドシートから取得<br>
+      手動取得 → 「履歴」タブの「☁️ 取得」ボタン<br>
+      店舗も同期 → 設定タブ「☁️ 店舗を取得」で共有
+    </div>
+  </div>
+
+  <div style="text-align:center;color:var(--sub);font-size:.72rem;padding:16px 0">
+    お買い物比較チェック v3.0<br>
+    ご不明な点はアプリ作成者にお問い合わせください
+  </div>
+
 </div>
 
 
@@ -430,7 +652,7 @@ const DEFAULT_CATS = [
 const UNIT_LABELS = {
   per100g:'100g単価', per1g:'1g単価',
   per100ml:'100ml単価', per1ml:'1ml単価', per1l:'1L単価',
-  per1m:'1m単価', per1cut:'1カット単価', per100p:'100枚単価',
+  per1m:'1m単価', per1cut:'1カット単価', per100p:'100組単価',
   per1piece:'1個単価',
 };
 
@@ -501,7 +723,7 @@ function initDB(cb) {
 // タブ
 // ══════════════════════════════════════════
 function switchTab(name) {
-  const names = ['calc','history','compare','fav','settings'];
+  const names = ['calc','history','compare','fav','settings','howto'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
@@ -717,7 +939,7 @@ function renderForm(cat) {
         <div class="fg"><label>合計値段 (円)</label>
           <input type="number" id="f_price" placeholder="例: 398"></div>
       </div>
-      <div class="hint">※ 組=2枚重ね。100枚単価で比較します</div>`;
+      <div class="hint">※ 100組単価で比較します</div>`;
 
   } else if (cat.type==='ktpaper') {
     b.innerHTML = `
@@ -826,10 +1048,10 @@ function calcOne(catId) {
     const price=parseFloat(document.getElementById('f_price')?.value);
     if (isNaN(kumis)||isNaN(price)||kumis<=0||price<=0) return null;
     basePrice = price;
-    const totalSheets = kumis * 2 * packs * qty;
-    unitPrice = price / totalSheets * 100;
-    unitLabel = '100枚単価';
-    label = `${kumis}組×${packs}パック × ${qty}個（計${totalSheets}枚）/ ${price}円`;
+    const totalKumis = kumis * packs * qty;  // 総組数
+    unitPrice = price / totalKumis * 100;    // 100組単価
+    unitLabel = '100組単価';
+    label = `${kumis}組×${packs}パック × ${qty}個（計${totalKumis}組）/ ${price}円`;
 
   } else if (cat.type==='ktpaper') {
     const cuts =parseFloat(document.getElementById('f_cuts')?.value);
