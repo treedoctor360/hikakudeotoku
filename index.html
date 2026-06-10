@@ -205,6 +205,10 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
             oninput="calcBoth()" onchange="calcBoth()" ></div>
       </div>
     </div>
+    <div class="fg" style="margin-bottom:10px">
+      <label>メモ（商品名・店舗名など / 任意）</label>
+      <input type="text" id="calcMemo" placeholder="例: 平和堂のさらさ" oninput="calcBoth()">
+    </div>
     <div class="btn-row">
       <button class="btn btn-gold btn-sm" onclick="openFavSaveModal()">⭐ お気に入り登録</button>
       <button class="btn btn-secondary btn-sm" onclick="clearForm()">クリア</button>
@@ -306,14 +310,18 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
     <p style="font-size:.72rem;color:var(--sub);margin-bottom:8px">追加すると自動でスプレッドシートにも保存。「☁️ 取得」でパートナーの店舗を取り込めます</p>
     <div id="storeList"></div>
     <div class="form-row" style="margin-top:8px">
-      <div class="fg"><input type="text" id="newStoreName" placeholder="例: びわこスーパー" style="font-size:.9rem"></div>
+      <div class="fg"><input type="text" id="newStoreName" placeholder="例: 平和堂" style="font-size:.9rem"></div>
       <button class="btn btn-secondary btn-sm" onclick="addStore()">追加</button>
     </div>
   </div>
 
   <!-- カテゴリ管理 -->
   <div class="card">
-    <div class="card-title">カテゴリ管理</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="card-title" style="margin:0">カテゴリ管理</div>
+      <button class="btn btn-blue btn-sm" onclick="syncCatsFromGAS()">☁️ カテゴリを取得</button>
+    </div>
+    <p style="font-size:.72rem;color:var(--sub);margin-bottom:8px">追加したカテゴリは自動でスプレッドシートにも保存。「☁️ 取得」でグループのカテゴリを取り込めます</p>
     <div id="catManageList"></div>
     <button class="btn btn-secondary btn-sm" onclick="openAddCatModal()">＋ カテゴリを追加</button>
   </div>
@@ -527,7 +535,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
       <div class="howto-num">5</div>
       <div class="howto-body">
         <div class="howto-title">グループキーワードとは</div>
-        <div class="howto-desc">同じスプレッドシートを複数グループで使う場合に、データを分けるための合言葉です。同じグループのメンバー全員が<b>同じキーワード</b>を設定してください。<br>例:「○○家族」「hikakudeotokune」など</div>
+        <div class="howto-desc">同じスプレッドシートを複数グループで使う場合に、データを分けるための合言葉です。同じグループのメンバー全員が<b>同じキーワード</b>を設定してください。<br>例:「yamada-family」「tomodachi1」など</div>
       </div>
     </div>
 
@@ -541,7 +549,8 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   </div>
 
   <div style="text-align:center;color:var(--sub);font-size:.72rem;padding:16px 0 24px">
-    お買い物比較チェック v3.0<br><br>
+    お買い物比較チェック v3.0<br>
+    ご不明な点はアプリ作成者にお問い合わせください<br><br>
     © 2026 Koh Kitsukawa. All rights reserved.<br>
     本システムの無断複製・転載・商用利用を禁じます。
   </div>
@@ -567,17 +576,17 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   <div class="modal">
     <h3>💾 履歴に保存</h3>
     <div class="fg"><label>商品名（任意）</label>
-      <input type="text" id="saveProductName" placeholder="例: いつもの洗剤 800ml"></div>
+      <input type="text" id="saveProductName" placeholder="例: アタック Neo 800ml"></div>
     <div class="fg"><label>店舗</label>
       <select id="saveStoreSelect" onchange="syncStoreInput()">
         <option value="">-- 選択 --</option>
       </select></div>
     <div class="fg"><label>店舗名（直接入力 / 選択で自動入力）</label>
-      <input type="text" id="saveStoreName" placeholder="例: おとくマート"></div>
+      <input type="text" id="saveStoreName" placeholder="例: フレンドマート"></div>
     <div class="fg"><label>日付</label>
       <input type="date" id="saveDate"></div>
     <div class="fg"><label>メモ（任意）</label>
-      <input type="text" id="saveMemo" placeholder="例: 特売・定期便など"></div>
+      <input type="text" id="saveMemo" placeholder="例: 特売・Amazon定期便"></div>
     <div class="btn-row">
       <button class="btn btn-green" onclick="saveToHistory()">保存する</button>
       <button class="btn btn-secondary" onclick="closeModal('saveModal')">キャンセル</button>
@@ -590,7 +599,7 @@ header h1{font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.04em;
   <div class="modal">
     <h3>⭐ お気に入り登録</h3>
     <div class="fg"><label>名前</label>
-      <input type="text" id="favName" placeholder="例: いつものティッシュ"></div>
+      <input type="text" id="favName" placeholder="例: いつものアタック"></div>
     <div class="btn-row">
       <button class="btn btn-gold" onclick="saveFav()">登録する</button>
       <button class="btn btn-secondary" onclick="closeModal('favSaveModal')">キャンセル</button>
@@ -695,29 +704,41 @@ function renderAll() {
 function initDB(cb) {
   const req = indexedDB.open(DB_NAME, DB_VER);
   req.onupgradeneeded = e => {
-    const d      = e.target.result;
-    const oldVer = e.oldVersion;
+    const d = e.target.result;
 
-    if (oldVer < 1) {
+    // historyストアが無ければ作成（どのバージョンからでも対応）
+    if (!d.objectStoreNames.contains('history')) {
       const s = d.createObjectStore('history', {keyPath:'id', autoIncrement:true});
       s.createIndex('cat',   'categoryId', {unique:false});
       s.createIndex('date',  'date',       {unique:false});
       s.createIndex('gasId', 'gasId',      {unique:false});
-    }
-    if (oldVer === 1) {
-      const tx    = e.target.transaction;
-      const store = tx.objectStore('history');
+    } else {
+      // 既存historyにgasIdインデックスが無ければ追加
+      const store = e.target.transaction.objectStore('history');
       if (!store.indexNames.contains('gasId')) {
         store.createIndex('gasId', 'gasId', {unique:false});
       }
     }
-    // v3: 保存した比較リストのストアを追加
+
+    // compareSavedストアが無ければ作成
     if (!d.objectStoreNames.contains('compareSaved')) {
       d.createObjectStore('compareSaved', {keyPath:'id', autoIncrement:true});
     }
   };
-  req.onsuccess = e => { db = e.target.result; cb(); };
-  req.onerror   = ()  => alert('DBの初期化に失敗しました');
+  req.onsuccess = e => {
+    db = e.target.result;
+    // 必要なストアが揃っているか最終確認
+    if (!db.objectStoreNames.contains('history')) {
+      alert('DBの構造が古い可能性があります。Safariの「履歴とWebサイトデータを消去」を行うと直ります。');
+    }
+    cb();
+  };
+  req.onerror = e => {
+    alert('DBの初期化に失敗しました: ' + (e.target.error?.message || '不明'));
+  };
+  req.onblocked = () => {
+    alert('別のタブでアプリが開かれています。他のタブを閉じてから再読み込みしてください。');
+  };
 }
 
 // ══════════════════════════════════════════
@@ -844,10 +865,13 @@ function addCategory() {
   const unit = document.getElementById('newCatUnit').value;
   if (!name) { alert('カテゴリ名を入力してください'); return; }
   const type = (unit==='per100ml'||unit==='per1ml'||unit==='per1l') ? 'liquid' : 'custom';
-  userCategories.push({id:'user_'+Date.now(), name, icon, type, unit});
+  const cat = {id:'user_'+Date.now(), name, icon, type, unit};
+  userCategories.push(cat);
   saveUserCategories();
   closeModal('addCatModal');
   renderCatGrid(); renderCatManageList(); updateHistFilters();
+  // GASにも送信（未設定なら何もしない）
+  syncCatToGAS(cat);
 }
 
 function deleteUserCat(id) {
@@ -1100,7 +1124,8 @@ function calcOne(catId) {
 
   const discountedPrice = getDiscount(basePrice);
   const unitAfter = discountedPrice ? unitPrice*(discountedPrice/basePrice) : null;
-  return {cat, label, unitPrice, unitLabel, basePrice, discountedPrice, unitAfter};
+  const memo = document.getElementById('calcMemo')?.value.trim() || '';
+  return {cat, label, unitPrice, unitLabel, basePrice, discountedPrice, unitAfter, memo};
 }
 
 // ══════════════════════════════════════════
@@ -1119,6 +1144,7 @@ function calcBoth() {
   // 結果をresultBoxに描画
   let html = `
     <div style="font-size:.7rem;opacity:.55;margin-bottom:4px">${r.cat.icon} ${r.cat.name} — ${r.label}</div>
+    ${r.memo ? `<div style="font-size:.78rem;color:var(--gold);margin-bottom:4px">📝 ${r.memo}</div>` : ''}
     <div class="r-main">${fmt(r.unitPrice)}<span>円 / ${r.unitLabel}</span></div>`;
   if (r.unitAfter !== null) {
     html += `
@@ -1141,6 +1167,7 @@ function addToCompare() {
     catIcon: r.cat.icon, catName: r.cat.name,
     label: r.label, unitLabel: r.unitLabel,
     displayPrice: dp, unitPrice: r.unitPrice, unitAfter: r.unitAfter,
+    memo: r.memo || '',
   });
   renderCompareList();
 }
@@ -1263,7 +1290,7 @@ function renderSavedCmpList() {
         <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-top:1px solid var(--border)">
           <span style="font-size:.65rem;color:${i===0?'var(--accent)':'var(--sub)'};font-weight:700;min-width:24px">${i===0?'最安':`${i+1}位`}</span>
           <span style="font-size:.9rem">${item.catIcon}</span>
-          <span style="flex:1;font-size:.75rem;color:var(--sub)">${item.label}</span>
+          <span style="flex:1;font-size:.75rem;color:var(--sub)">${item.memo ? item.memo + ' · ' : ''}${item.label}</span>
           <span style="font-family:'Oswald',sans-serif;font-size:1rem;color:${i===0?'var(--accent)':'var(--text)'}">${fmt(item.displayPrice)}円</span>
           <span style="font-size:.63rem;color:var(--sub)">/${item.unitLabel}</span>
         </div>`).join('');
@@ -1313,8 +1340,8 @@ function renderCompareList() {
         <div class="cmp-rank ${isCheapest ? 'top' : ''}">${rankLabel}</div>
         <div style="font-size:1.2rem">${c.catIcon}</div>
         <div class="cmp-info">
-          <div class="cmp-name">${c.catName}</div>
-          <div class="cmp-label">${c.label}</div>
+          <div class="cmp-name">${c.memo ? c.memo : c.catName}</div>
+          <div class="cmp-label">${c.memo ? c.catName + ' · ' : ''}${c.label}</div>
           ${c.unitAfter!=null ? '<div style="font-size:.65rem;color:var(--accent)">割引後</div>' : ''}
         </div>
         <div>
@@ -1339,6 +1366,8 @@ function clearForm() {
   const cat=getAllCats().find(c=>c.id===selectedCatId);
   if(cat) renderForm(cat);
   clearDiscount();
+  const memo = document.getElementById('calcMemo');
+  if (memo) memo.value = '';
   document.getElementById('resultCard').style.display = 'none';
   currentResult = null;
 }
@@ -1437,13 +1466,17 @@ function openSaveModal() {
   if (!currentResult) return;
   ['saveProductName','saveStoreName','saveMemo'].forEach(id=>document.getElementById(id).value='');
   updateSaveStoreSelect();
+  // 計算欄のメモを保存メモ欄に引き継ぐ
+  const calcMemo = document.getElementById('calcMemo')?.value.trim() || '';
+  if (calcMemo) document.getElementById('saveMemo').value = calcMemo;
   // 日付をデフォルト今日に設定
   document.getElementById('saveDate').value = new Date().toISOString().slice(0,10);
   document.getElementById('saveModal').classList.add('open');
 }
 
 function saveToHistory() {
-  if (!currentResult||!db) return;
+  if (!currentResult) { alert('先に計算してください'); return; }
+  if (!db) { alert('データベースが初期化されていません。ページを再読み込みしてください'); return; }
   const r=currentResult;
   const rec={
     categoryId:r.cat.id, categoryName:r.cat.name, categoryIcon:r.cat.icon,
@@ -1456,9 +1489,26 @@ function saveToHistory() {
     gasId: null,
     date_iso: new Date().toISOString(),
   };
-  const tx=db.transaction('history','readwrite');
-  tx.objectStore('history').add(rec);
-  tx.oncomplete=()=>{ closeModal('saveModal'); syncToGAS(rec); };
+  try {
+    const tx = db.transaction('history','readwrite');
+    const req = tx.objectStore('history').add(rec);
+    req.onerror = e => {
+      alert('保存に失敗しました（add）: ' + (e.target.error?.message || '不明なエラー'));
+    };
+    tx.oncomplete = () => {
+      closeModal('saveModal');
+      renderHistory();
+      syncToGAS(rec);
+    };
+    tx.onerror = e => {
+      alert('保存に失敗しました（tx）: ' + (e.target.error?.message || '不明なエラー'));
+    };
+    tx.onabort = e => {
+      alert('保存が中断されました: ' + (e.target.error?.message || 'DBバージョンの不整合の可能性があります。Safariのキャッシュをクリアしてください'));
+    };
+  } catch(err) {
+    alert('保存エラー: ' + err.message);
+  }
 }
 
 function renderHistory() {
@@ -1652,6 +1702,9 @@ async function silentSyncFromGAS() {
       }
     }
 
+    // カテゴリをマージ
+    await mergeCatsFromGAS(keyParam);
+
     // ステータス表示を更新
     const key2 = getGroupKey();
     const label = key2 ? `GAS設定済 [${key2}]` : 'GAS設定済';
@@ -1720,6 +1773,9 @@ async function syncFromGAS() {
       }
     }
 
+    // カテゴリをマージ
+    const catAdded = await mergeCatsFromGAS(keyParam);
+
     document.getElementById('syncStatus').textContent='同期OK';
     document.getElementById('syncStatus').className='sync-status ok';
     renderHistory();
@@ -1729,7 +1785,8 @@ async function syncFromGAS() {
       `　うち新規追加: ${added}件\n` +
       `　うち削除済みスキップ: ${skippedDeleted}件\n` +
       `　うち既存スキップ: ${skippedExists}件\n` +
-      `店舗: ${storeAdded}件追加`
+      `店舗: ${storeAdded}件追加\n` +
+      `カテゴリ: ${catAdded}件追加`
     );
   } catch(e) {
     document.getElementById('syncStatus').textContent='取得エラー';
@@ -1768,6 +1825,51 @@ async function syncStoreToGAS(name) {
   try {
     await fetch(`${url}?action=addStore&name=${encodeURIComponent(name)}&key=${encodeURIComponent(key)}`);
   } catch(e) { console.warn('店舗GAS送信エラー:', e); }
+}
+
+// カテゴリ1件をGASに送信
+async function syncCatToGAS(cat) {
+  const url=getGasUrl(); if(!url) return;
+  const key=getGroupKey();
+  try {
+    const encoded = encodeURIComponent(JSON.stringify(cat));
+    await fetch(`${url}?action=addCat&data=${encoded}&key=${encodeURIComponent(key)}`);
+  } catch(e) { console.warn('カテゴリGAS送信エラー:', e); }
+}
+
+// GASからカテゴリを取得してマージ（共通処理）
+// 戻り値: 追加した件数
+async function mergeCatsFromGAS(keyParam) {
+  const url=getGasUrl(); if(!url) return 0;
+  try {
+    const res  = await fetch(`${url}?action=getCats${keyParam}`);
+    const json = await res.json();
+    if (!json.cats || !Array.isArray(json.cats)) return 0;
+    let added = 0;
+    json.cats.forEach(c => {
+      // 既存（デフォルト・ユーザー）に同じidが無ければ追加
+      const exists = getAllCats().some(ex => ex.id === c.id);
+      if (!exists && c.id) {
+        userCategories.push({id:c.id, name:c.name, icon:c.icon, type:c.type, unit:c.unit});
+        added++;
+      }
+    });
+    if (added > 0) {
+      saveUserCategories();
+      renderCatGrid(); renderCatManageList(); updateHistFilters();
+    }
+    return added;
+  } catch(e) { console.warn('カテゴリ取得エラー:', e); return 0; }
+}
+
+// カテゴリ手動取得（設定タブのボタン用）
+async function syncCatsFromGAS() {
+  const url=getGasUrl();
+  if(!url){alert('GAS URLが設定されていません');return;}
+  const key=getGroupKey();
+  const keyParam = key ? `&key=${encodeURIComponent(key)}` : '';
+  const added = await mergeCatsFromGAS(keyParam);
+  alert(`☁️ カテゴリ取得完了：${added}件を追加しました`);
 }
 
 // ══════════════════════════════════════════
